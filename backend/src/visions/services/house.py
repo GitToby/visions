@@ -1,0 +1,62 @@
+import uuid
+
+from fastapi import HTTPException, status
+from sqlmodel import func, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from visions.models import House, HouseCreateRequest, Room
+
+
+async def get_all_for_owner(db: AsyncSession, owner_id: uuid.UUID) -> list[House]:
+    result = await db.exec(
+        select(House).where(House.owner_id == owner_id).order_by(House.created_at.desc())  # type: ignore[arg-type]
+    )
+    return list(result.all())
+
+
+async def get_by_id(db: AsyncSession, house_id: uuid.UUID) -> House | None:
+    return await db.get(House, house_id)
+
+
+async def get_or_404(db: AsyncSession, house_id: uuid.UUID, owner_id: uuid.UUID) -> House:
+    house = await get_by_id(db, house_id)
+    if house is None or house.owner_id != owner_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="House not found")
+    return house
+
+
+async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: HouseCreateRequest) -> House:
+    house = House(name=data.name, owner_id=owner_id)
+    db.add(house)
+    await db.commit()
+    await db.refresh(house)
+    return house
+
+
+async def delete(db: AsyncSession, house: House) -> None:
+    await db.delete(house)
+    await db.commit()
+
+
+async def count_rooms(db: AsyncSession, house_id: uuid.UUID) -> int:
+    result = await db.exec(select(func.count()).where(Room.house_id == house_id))
+    return result.one()
+
+
+async def get_rooms(db: AsyncSession, house_id: uuid.UUID) -> list[Room]:
+    result = await db.exec(select(Room).where(Room.house_id == house_id))
+    return list(result.all())
+
+
+async def add_room(
+    db: AsyncSession,
+    *,
+    house_id: uuid.UUID,
+    label: str,
+    image_key: str,
+) -> Room:
+    room = Room(house_id=house_id, label=label, original_image_key=image_key)
+    db.add(room)
+    await db.commit()
+    await db.refresh(room)
+    return room

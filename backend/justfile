@@ -1,0 +1,23 @@
+# Backend justfile
+
+init:
+    uv sync --all-groups
+
+lint: init
+    uv run ruff format src tests
+    uv run ruff check --fix src tests
+
+check: init lint
+    uv run pyrefly check
+
+test *flags: init lint check
+    uv run pytest -v {{flags}}
+
+mk-migration name: init lint check
+    uv run alembic revision --autogenerate -m "{{name}}"
+
+migrate: init lint check
+    uv run alembic upgrade head
+
+serve: init lint check
+    uv run python src/app/main.py

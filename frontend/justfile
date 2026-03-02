@@ -1,0 +1,19 @@
+# Frontend justfile
+
+init:
+    bun install
+
+lint: init
+    bun run lint
+
+check: init lint
+    bun run typecheck
+
+test *flags: init lint check
+    bun run test {{flags}}
+
+gen-api: init
+    bun run generate:api
+
+dev: init lint check
+    bun run dev
