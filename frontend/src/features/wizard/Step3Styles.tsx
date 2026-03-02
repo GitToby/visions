@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StylePicker } from "@/features/styles/StylePicker";
-import { useMutation, useQuery } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 
 interface Step3StylesProps {
   houseId: string;
@@ -20,11 +20,14 @@ export function Step3Styles({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: house } = useQuery("/houses/{house_id}", "get", {
+  const { data: house } = $api.useQuery("get", "/houses/{house_id}", {
     params: { path: { house_id: houseId } },
   });
 
-  const triggerGeneration = useMutation("/generation", "post");
+  const { mutateAsync: triggerGeneration } = $api.useMutation(
+    "post",
+    "/generation"
+  );
 
   async function handleGenerate() {
     if (!house || selectedStyleIds.length === 0) return;

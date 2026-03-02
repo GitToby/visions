@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 type HouseDetail = components["schemas"]["HouseDetailResponse"];
@@ -9,9 +9,9 @@ interface GenerationGalleryProps {
 }
 
 export function GenerationGallery({ house }: GenerationGalleryProps) {
-  const { data: jobs, isLoading } = useQuery(
-    "/generation/houses/{house_id}",
+  const { data: jobs, isLoading } = $api.useQuery(
     "get",
+    "/generation/houses/{house_id}",
     {
       params: { path: { house_id: house.id } },
     }

@@ -1,6 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { mutate } from "swr";
-import { useMutation } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 
 interface Step1IdentityProps {
   houseName: string;
@@ -15,7 +15,8 @@ export function Step1Identity({
   onHouseCreated,
   onNext,
 }: Step1IdentityProps) {
-  const trigger = useMutation("/houses", "post");
+  const queryClient = useQueryClient();
+  const { mutateAsync: createHouse } = $api.useMutation("post", "/houses");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +28,10 @@ export function Step1Identity({
     setError(null);
 
     try {
-      const { data } = await trigger({ body: { name: houseName.trim() } });
+      const data = await createHouse({ body: { name: houseName.trim() } });
       if (data) {
         onHouseCreated(data.id);
-        mutate("/houses");
+        queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
         onNext();
       }
     } catch {

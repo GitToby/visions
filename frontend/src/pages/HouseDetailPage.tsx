@@ -1,27 +1,31 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { mutate } from "swr";
 import { GenerationGallery } from "@/features/houses/GenerationGallery";
-import { useMutation, useQuery } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 
 export function HouseDetailPage() {
   const { houseId } = useParams<{ houseId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     data: house,
     isLoading,
     error,
-  } = useQuery("/houses/{house_id}", "get", {
+  } = $api.useQuery("get", "/houses/{house_id}", {
     params: { path: { house_id: houseId! } },
   });
 
-  const deleteHouse = useMutation("/houses/{house_id}", "delete");
+  const { mutateAsync: deleteHouse } = $api.useMutation(
+    "delete",
+    "/houses/{house_id}"
+  );
 
   async function handleDelete() {
     if (!confirm(`Delete "${house?.name}"? This cannot be undone.`)) return;
     await deleteHouse({ params: { path: { house_id: houseId! } } });
-    mutate("/houses");
+    queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
     navigate("/");
   }
 

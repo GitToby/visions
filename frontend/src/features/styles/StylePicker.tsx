@@ -1,4 +1,4 @@
-import { useQuery } from "@/lib/api/client";
+import { $api } from "@/lib/api/client";
 import { StyleCard } from "./StyleCard";
 
 interface StylePickerProps {
@@ -11,7 +11,7 @@ export function StylePicker({ selected, onChange }: StylePickerProps) {
     data: styles,
     isLoading,
     error,
-  } = useQuery("/styles", "get", { params: {} });
+  } = $api.useQuery("get", "/styles");
 
   function toggle(id: string) {
     if (selected.includes(id)) {

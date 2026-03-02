@@ -1,18 +1,22 @@
-import { mutate } from "swr";
-import { useMutation, useQuery } from "@/lib/api/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { $api } from "@/lib/api/client";
 import { HouseCard } from "./HouseCard";
 
 export function HouseGrid() {
+  const queryClient = useQueryClient();
   const {
     data: houses,
     isLoading,
     error,
-  } = useQuery("/houses", "get", { params: {} });
-  const deleteHouse = useMutation("/houses/{house_id}", "delete");
+  } = $api.useQuery("get", "/houses");
+  const { mutateAsync: deleteHouse } = $api.useMutation(
+    "delete",
+    "/houses/{house_id}"
+  );
 
   async function handleDelete(id: string) {
     await deleteHouse({ params: { path: { house_id: id } } });
-    mutate("/houses");
+    queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
   }
 
   if (isLoading) {
