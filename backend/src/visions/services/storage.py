@@ -10,14 +10,9 @@ from visions.core.config import settings
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
-_supabase: Client | None = None
-
-
-def _client() -> Client:
-    global _supabase
-    if _supabase is None:
-        _supabase = create_client(settings.supabase_url, settings.supabase_service_role_key)
-    return _supabase
+_supabase: Client = create_client(
+    settings.supabase_url, settings.supabase_secret_key.get_secret_value()
+)
 
 
 def _key(prefix: str, filename: str) -> str:
@@ -29,7 +24,7 @@ async def upload_image(file_bytes: bytes, filename: str, prefix: str = "uploads"
     """Upload image bytes and return the storage path key."""
     key = _key(prefix, filename)
     try:
-        _client().storage.from_(settings.supabase_storage_bucket).upload(
+        _supabase.storage.from_(settings.supabase_storage_bucket).upload(
             key,
             file_bytes,
             {"content-type": _guess_content_type(filename)},
@@ -45,7 +40,7 @@ async def upload_image(file_bytes: bytes, filename: str, prefix: str = "uploads"
 async def upload_image_from_bytes(image_bytes: bytes, key: str) -> None:
     """Store raw bytes at an explicit key (used by generation service)."""
     try:
-        _client().storage.from_(settings.supabase_storage_bucket).upload(
+        _supabase.storage.from_(settings.supabase_storage_bucket).upload(
             key,
             image_bytes,
             {"content-type": "image/png", "upsert": "true"},
@@ -60,10 +55,8 @@ async def upload_image_from_bytes(image_bytes: bytes, key: str) -> None:
 def presigned_url(key: str) -> str:
     """Generate a time-limited signed URL for a stored object."""
     try:
-        res = (
-            _client()
-            .storage.from_(settings.supabase_storage_bucket)
-            .create_signed_url(key, SIGNED_URL_EXPIRES)
+        res = _supabase.storage.from_(settings.supabase_storage_bucket).create_signed_url(
+            key, SIGNED_URL_EXPIRES
         )
         return res["signedURL"]
     except Exception as exc:
@@ -76,7 +69,7 @@ def presigned_url(key: str) -> str:
 def download_image(key: str) -> bytes:
     """Download a stored object and return its bytes."""
     try:
-        return bytes(_client().storage.from_(settings.supabase_storage_bucket).download(key))
+        return bytes(_supabase.storage.from_(settings.supabase_storage_bucket).download(key))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
