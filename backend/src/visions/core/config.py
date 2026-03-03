@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self):
         return SecretStr(
-            f"postgresql+asyncpg://{self.database_user}:{self.database_password.get_secret_value()}@{self.database_host}:{self.database_port}/{self.database_name}?ssl=require"
+            f"postgresql+psycopg://{self.database_user}:{self.database_password.get_secret_value()}@{self.database_host}:{self.database_port}/{self.database_name}?sslmode=require"
         )
 
     # postgresql://:@/visions?sslmode=require&channel_binding=require

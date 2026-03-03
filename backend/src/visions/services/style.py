@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlmodel import or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.models import DesignStyle, StyleCreateRequest
+from visions.models import DesignStyle, DesignStyleCreate
 
 # Curated built-in styles — seeded on first startup
 BUILTIN_STYLES: list[dict] = [
@@ -92,7 +92,7 @@ async def create_custom(
     db: AsyncSession,
     *,
     creator_id: uuid.UUID,
-    data: StyleCreateRequest,
+    data: DesignStyleCreate,
     preview_image_key: str | None = None,
 ) -> DesignStyle:
     style = DesignStyle(

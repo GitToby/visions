@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.models import House, HouseCreateRequest, Room
+from visions.models import House, HouseCreate, Room
 
 
 async def get_all_for_owner(db: AsyncSession, owner_id: uuid.UUID) -> list[House]:
@@ -25,7 +25,7 @@ async def get_or_404(db: AsyncSession, house_id: uuid.UUID, owner_id: uuid.UUID)
     return house
 
 
-async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: HouseCreateRequest) -> House:
+async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: HouseCreate) -> House:
     house = House(name=data.name, owner_id=owner_id)
     db.add(house)
     await db.commit()

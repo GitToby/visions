@@ -51,9 +51,14 @@ async def generate_room_redesign(
         ) from exc
 
     # Extract raw image bytes from the first image part in the response
-    # todo: make this check correctly on None response
+    # todo: make this check correctly on None response - check docs
+    assert response.candidates is not None, "Gemini returned no candidates"
+    assert response.candidates[0].content is not None, "Gemini returned no candidates"
+    assert response.candidates[0].content.parts is not None, "Gemini returned no candidates"
+
     for part in response.candidates[0].content.parts:
         if part.inline_data is not None:
+            assert part.inline_data.data is not None, "Gemini returned no candidates"
             return part.inline_data.data
 
     raise HTTPException(

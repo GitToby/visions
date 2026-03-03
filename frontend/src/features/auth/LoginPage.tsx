@@ -14,7 +14,8 @@ export function LoginPage() {
   }, [user, isLoading, navigate]);
 
   async function handleLogin() {
-    const { data } = await apiClient.GET("/auth/login");
+    // biome-ignore lint/suspicious/noExplicitAny: /auth/login not in schema until regenerated
+    const { data } = await (apiClient as any).GET("/auth/login");
     if (data?.url) {
       window.location.href = data.url;
     }

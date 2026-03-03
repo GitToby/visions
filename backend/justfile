@@ -8,7 +8,7 @@ lint: init
     uv run ruff check --fix src tests
 
 check: init lint
-    uv run pyrefly check
+    uv run pyrefly check src
 
 test *flags: init lint check
     uv run pytest -v {{flags}}
@@ -20,4 +20,4 @@ migrate: init lint check
     uv run alembic upgrade head
 
 serve: init lint check
-    uv run python src/app/main.py
+    PYTHONPATH=src uv run src/visions/main.py

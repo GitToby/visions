@@ -1,7 +1,10 @@
 import { Check } from "lucide-react";
 import type { components } from "@/lib/api/schema";
 
-type Style = components["schemas"]["StyleResponse"];
+// The API returns presigned URLs; schema uses _key fields until regenerated.
+type Style = components["schemas"]["DesignStyleResponse"] & {
+  preview_image_url?: string | null;
+};
 
 interface StyleCardProps {
   style: Style;

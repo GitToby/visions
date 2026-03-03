@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, Form, UploadFile, status
 
 from visions.core.db import DBSession
 from visions.core.security import CurrentUser
-from visions.models import HouseCreateRequest, HouseDetailResponse, HouseResponse, RoomResponse
+from visions.models import HouseCreate, HouseResponse, RoomResponse
 from visions.services import house as house_service
 from visions.services import storage as storage_service
 
@@ -23,7 +23,7 @@ async def list_houses(db: DBSession, current_user: CurrentUser) -> list[HouseRes
 
 @router.post("", response_model=HouseResponse, status_code=status.HTTP_201_CREATED)
 async def create_house(
-    payload: HouseCreateRequest,
+    payload: HouseCreate,
     db: DBSession,
     current_user: CurrentUser,
 ) -> HouseResponse:
@@ -31,22 +31,11 @@ async def create_house(
     return HouseResponse.model_validate(house)
 
 
-@router.get("/{house_id}", response_model=HouseDetailResponse)
-async def get_house(
-    house_id: uuid.UUID, db: DBSession, current_user: CurrentUser
-) -> HouseDetailResponse:
+@router.get("/{house_id}", response_model=HouseResponse)
+async def get_house(house_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> HouseResponse:
     house = await house_service.get_or_404(db, house_id, current_user.id)
-    rooms = await house_service.get_rooms(db, house.id)
-    room_responses = [
-        RoomResponse.model_validate(r).model_copy(
-            update={"original_image_url": storage_service.presigned_url(r.original_image_key)}
-        )
-        for r in rooms
-    ]
-    count = len(room_responses)
-    return HouseDetailResponse.model_validate(house).model_copy(
-        update={"room_count": count, "rooms": room_responses}
-    )
+    count = await house_service.count_rooms(db, house.id)
+    return HouseResponse.model_validate(house).model_copy(update={"room_count": count})
 
 
 @router.delete("/{house_id}", status_code=status.HTTP_204_NO_CONTENT)

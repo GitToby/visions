@@ -67,7 +67,7 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
       try {
         await apiClient.POST("/houses/{house_id}/rooms", {
           params: { path: { house_id: houseId } },
-          body: { image: item.file, label: item.label },
+          body: { image: item.file as unknown as string, label: item.label },
           bodySerializer(body) {
             const fd = new FormData();
             fd.append("image", body.image);
@@ -95,9 +95,10 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
 
   return (
     <div>
-      <h2 className="card-title mb-2 text-2xl">Upload your rooms</h2>
+      <h2 className="mb-2 text-xl font-bold">Upload your rooms</h2>
       <p className="mb-6 text-base-content/60">
-        Drag and drop photos of each room you want to redesign.
+        Drag and drop photos of each room you want to redesign. Add at least one
+        room.
       </p>
 
       <div
@@ -115,7 +116,9 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
             ? "Drop photos here"
             : "Drag photos here or click to browse"}
         </p>
-        <p className="text-sm text-base-content/40">PNG, JPG, WEBP accepted</p>
+        <p className="mt-1 text-sm text-base-content/40">
+          PNG, JPG, WEBP accepted
+        </p>
       </div>
 
       {files.length > 0 && (
@@ -123,16 +126,16 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
           {files.map((item, idx) => (
             <div
               key={`${item.file.name}-${idx}`}
-              className="flex items-center gap-3 rounded-lg bg-base-200 p-3"
+              className="flex items-center gap-3 rounded-xl bg-base-200 p-3"
             >
               <img
                 src={item.preview}
                 alt={item.label}
-                className="h-12 w-12 rounded object-cover"
+                className="h-12 w-12 rounded-lg object-cover"
               />
               <input
                 type="text"
-                className="input input-bordered input-sm flex-1"
+                className="input input-sm flex-1"
                 value={item.label}
                 onChange={(e) => updateLabel(idx, e.target.value)}
                 placeholder="Room label"
@@ -146,16 +149,16 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
                   <span className="loading loading-spinner loading-xs" />
                 )}
                 {item.status === "done" && (
-                  <span className="text-success">Uploaded</span>
+                  <span className="font-medium text-success">Done</span>
                 )}
                 {item.status === "error" && (
-                  <span className="text-error">Failed</span>
+                  <span className="font-medium text-error">Error</span>
                 )}
               </div>
               {item.status === "pending" && (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-ghost btn-sm btn-circle"
                   onClick={() => removeFile(idx)}
                   aria-label="Remove"
                 >
@@ -167,7 +170,7 @@ export function Step2Rooms({ houseId, onNext, onBack }: Step2RoomsProps) {
         </div>
       )}
 
-      <div className="card-actions mt-6 justify-between">
+      <div className="mt-6 flex justify-between">
         <button type="button" className="btn btn-ghost" onClick={onBack}>
           Back
         </button>

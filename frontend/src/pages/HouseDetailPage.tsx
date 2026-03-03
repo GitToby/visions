@@ -26,7 +26,7 @@ export function HouseDetailPage() {
     if (!confirm(`Delete "${house?.name}"? This cannot be undone.`)) return;
     await deleteHouse({ params: { path: { house_id: houseId! } } });
     queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
-    navigate("/");
+    navigate("/home");
   }
 
   if (isLoading) {
@@ -47,13 +47,13 @@ export function HouseDetailPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/" className="btn btn-ghost btn-sm">
+          <Link to="/home" className="btn btn-ghost btn-sm btn-circle">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{house.name}</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">{house.name}</h1>
             <p className="text-base-content/60">
               {house.room_count} {house.room_count === 1 ? "room" : "rooms"}
             </p>
@@ -68,7 +68,8 @@ export function HouseDetailPage() {
           Delete Project
         </button>
       </div>
-      <GenerationGallery house={house} />
+      {/* biome-ignore lint/suspicious/noExplicitAny: HouseDetailResponse not in schema until regenerated */}
+      <GenerationGallery house={house as any} />
     </div>
   );
 }

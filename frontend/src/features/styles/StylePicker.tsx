@@ -7,11 +7,7 @@ interface StylePickerProps {
 }
 
 export function StylePicker({ selected, onChange }: StylePickerProps) {
-  const {
-    data: styles,
-    isLoading,
-    error,
-  } = $api.useQuery("get", "/styles");
+  const { data: styles, isLoading, error } = $api.useQuery("get", "/styles");
 
   function toggle(id: string) {
     if (selected.includes(id)) {

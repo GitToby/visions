@@ -43,31 +43,29 @@ export function Step1Identity({
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2 className="card-title mb-2 text-2xl">Name your project</h2>
+      <h2 className="mb-2 text-xl font-bold">Name your project</h2>
       <p className="mb-6 text-base-content/60">
         Give your house project a memorable name.
       </p>
-      <label className="form-control w-full">
-        <div className="label">
-          <span className="label-text">Project name</span>
-        </div>
+      <fieldset className="fieldset w-full">
+        <legend className="fieldset-legend">Project name</legend>
         <input
           type="text"
           placeholder="e.g. Beach House Renovation"
-          className="input input-bordered w-full"
+          className="input w-full"
           value={houseName}
           onChange={(e) => onHouseNameChange(e.target.value)}
           required
           maxLength={255}
           autoFocus
         />
-      </label>
+      </fieldset>
       {error && (
         <div className="alert alert-error mt-4">
           <span>{error}</span>
         </div>
       )}
-      <div className="card-actions mt-6 justify-end">
+      <div className="mt-6 flex justify-end">
         <button
           type="submit"
           className="btn btn-primary"

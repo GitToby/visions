@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { StylePicker } from "@/features/styles/StylePicker";
 import { $api } from "@/lib/api/client";
 
@@ -8,6 +7,7 @@ interface Step3StylesProps {
   selectedStyleIds: string[];
   onStylesChange: (ids: string[]) => void;
   onBack: () => void;
+  onComplete: (houseId: string) => void;
 }
 
 export function Step3Styles({
@@ -15,8 +15,8 @@ export function Step3Styles({
   selectedStyleIds,
   onStylesChange,
   onBack,
+  onComplete,
 }: Step3StylesProps) {
-  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,9 @@ export function Step3Styles({
     setError(null);
 
     try {
-      const roomIds = house.rooms.map((r) => r.id);
+      // biome-ignore lint/suspicious/noExplicitAny: stale API schema, HouseResponse missing rooms until regenerated
+      const houseAny = house as any;
+      const roomIds = houseAny.rooms?.map((r: { id: string }) => r.id) ?? [];
       await triggerGeneration({
         body: {
           house_id: houseId,
@@ -44,7 +46,7 @@ export function Step3Styles({
           style_ids: selectedStyleIds,
         },
       });
-      navigate(`/houses/${houseId}`);
+      onComplete(houseId);
     } catch {
       setError("Failed to start generation. Please try again.");
       setIsGenerating(false);
@@ -53,7 +55,7 @@ export function Step3Styles({
 
   return (
     <div>
-      <h2 className="card-title mb-2 text-2xl">Choose your styles</h2>
+      <h2 className="mb-2 text-xl font-bold">Choose your styles</h2>
       <p className="mb-6 text-base-content/60">
         Select one or more design aesthetics to apply to your rooms.
       </p>
@@ -66,7 +68,7 @@ export function Step3Styles({
         </div>
       )}
 
-      <div className="card-actions mt-6 justify-between">
+      <div className="mt-6 flex justify-between">
         <button type="button" className="btn btn-ghost" onClick={onBack}>
           Back
         </button>

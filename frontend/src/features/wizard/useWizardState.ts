@@ -15,6 +15,7 @@ interface WizardActions {
   setSelectedStyleIds: (ids: string[]) => void;
   nextStep: () => void;
   prevStep: () => void;
+  reset: () => void;
 }
 
 export function useWizardState(): WizardState & WizardActions {
@@ -31,6 +32,13 @@ export function useWizardState(): WizardState & WizardActions {
     setStep((s) => Math.max(s - 1, 1) as WizardStep);
   }
 
+  function reset() {
+    setStep(1);
+    setHouseName("");
+    setHouseId(null);
+    setSelectedStyleIds([]);
+  }
+
   return {
     step,
     houseName,
@@ -41,5 +49,6 @@ export function useWizardState(): WizardState & WizardActions {
     setSelectedStyleIds,
     nextStep,
     prevStep,
+    reset,
   };
 }
