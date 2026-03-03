@@ -70,6 +70,16 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
     houses: list[House] = Relationship(back_populates="owner")
     custom_styles: list[DesignStyle] = Relationship(back_populates="creator")
 
+    def to_response(self) -> UserResponse:
+        return UserResponse(
+            id=self.id,
+            email=self.email,
+            name=self.name,
+            picture=self.picture,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
+
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -102,6 +112,17 @@ class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
 
     owner: User = Relationship(back_populates="houses")
     rooms: list[Room] = Relationship(back_populates="house")
+
+    def to_response(self) -> HouseResponse:
+        room_count = len(self.rooms)
+        return HouseResponse(
+            id=self.id,
+            name=self.name,
+            owner_id=self.owner_id,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            room_count=room_count,
+        )
 
 
 class HouseResponse(BaseModel):
@@ -139,6 +160,16 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
 
     house: House = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="room")
+
+    def to_response(self) -> RoomResponse:
+        return RoomResponse(
+            id=self.id,
+            house_id=self.house_id,
+            label=self.label,
+            original_image_key=self.original_image_key,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
 
 
 class RoomResponse(BaseModel):
@@ -193,6 +224,19 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, table=True):
     room: Room = Relationship(back_populates="generation_jobs")
     style: DesignStyle = Relationship(back_populates="generation_jobs")
 
+    def to_response(self) -> GenerationJobResponse:
+        return GenerationJobResponse(
+            id=self.id,
+            room_id=self.room_id,
+            style_id=self.style_id,
+            status=self.status,
+            result_image_key=self.result_image_key,
+            error_message=self.error_message,
+            completed_at=self.completed_at,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
+
 
 class GenerationJobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -240,7 +284,7 @@ class DesignStyle(DesignStyleBase, UUIDModel, CreatedUpdatedAtMixin, table=True)
 
     creator: User | None = Relationship(back_populates="custom_styles")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="style")
-    
+
     def to_response(self) -> DesignStyleResponse:
         return DesignStyleResponse(
             id=self.id,
