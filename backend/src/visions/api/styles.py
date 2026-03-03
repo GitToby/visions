@@ -52,3 +52,9 @@ async def create_style(
 async def delete_style(style_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> None:
     style = await style_service.get_or_404(db, style_id)
     await style_service.delete(db, style, current_user.id)
+
+
+@router.post("/seed", status_code=status.HTTP_204_NO_CONTENT)
+async def seed_builtin_styles(db: DBSession, current_user: CurrentUser) -> None:
+    """Upsert the curated built-in design styles. Idempotent."""
+    await style_service.seed_builtins(db)

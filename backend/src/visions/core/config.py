@@ -23,14 +23,17 @@ class Settings(BaseSettings):
             f"postgresql+psycopg://{self.database_user}:{self.database_password.get_secret_value()}@{self.database_host}:{self.database_port}/{self.database_name}?sslmode=require"
         )
 
-    # postgresql://:@/visions?sslmode=require&channel_binding=require
+    # Frontend
+    frontend_url: str = "http://localhost:5173"
 
     # Supabase
-    supabase_url: str = ""
-    supabase_anon_key: str = ""
-    supabase_service_role_key: str = ""
-    supabase_jwt_secret: str = ""  # Settings > API > JWT Settings > JWT Secret
+    supabase_project_id: str = "sutnrwodqzpfvuuboksu"
+    supabase_secret_key: SecretStr
     supabase_storage_bucket: str = "visions"
+
+    @property
+    def supabase_url(self):
+        return f"https://{self.supabase_project_id}.supabase.co"
 
     # Gemini
     gemini_api_key: str = ""

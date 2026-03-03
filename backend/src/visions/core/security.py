@@ -3,20 +3,30 @@ from typing import Annotated
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import PyJWKClient
 
 from visions.core.config import settings
 from visions.core.db import DBSession
 from visions.models import User
 from visions.services.user import upsert_from_supabase
 
+_jwks_client = PyJWKClient(
+    f"{settings.supabase_url}/auth/v1/.well-known/jwks.json",
+    cache_keys=True,
+)
+
 
 def validate_supabase_jwt(token: str) -> dict | None:
-    """Validate a Supabase-issued JWT and return the decoded payload, or None on failure."""
+    """Validate a Supabase-issued JWT via JWKS (ES256) and return the decoded payload."""
+    try:
+        signing_key = _jwks_client.get_signing_key_from_jwt(token)
+    except jwt.exceptions.PyJWKClientError:
+        return None
     try:
         return jwt.decode(
             token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            signing_key,
+            algorithms=["ES256"],
             audience="authenticated",
         )
     except jwt.PyJWTError:

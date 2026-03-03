@@ -1,11 +1,16 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
 
 from visions.core.security import get_current_user
 from visions.models import User, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+class LoginResponse(BaseModel):
+    url: str
 
 
 @router.get("/me", response_model=UserResponse)

@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Login
+         * @description Return the Supabase Google OAuth URL for the client to redirect to.
+         */
+        get: operations["login_auth_login_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -334,6 +354,11 @@ export interface components {
          * @enum {string}
          */
         JobStatus: "pending" | "processing" | "completed" | "failed";
+        /** LoginResponse */
+        LoginResponse: {
+            /** Url */
+            url: string;
+        };
         /** RoomResponse */
         RoomResponse: {
             /**
@@ -401,6 +426,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    login_auth_login_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+        };
+    };
     get_me_auth_me_get: {
         parameters: {
             query?: never;
