@@ -253,6 +253,8 @@ export interface components {
             description: string;
             /** Preview Image Key */
             preview_image_key: string | null;
+            /** Preview Image Url */
+            preview_image_url?: string | null;
             /** Is Builtin */
             is_builtin: boolean;
             /** Creator Id */

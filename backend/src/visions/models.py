@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 
@@ -225,10 +226,9 @@ class DesignStyleUpdate(SQLModel):
 
 
 class DesignStyle(DesignStyleBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
-    preview_image_key: str | None = Field(
-        default=None,
+    preview_image_key: str = Field(
         max_length=500,
-        description="Supabase Storage key for the preview; None for built-in styles",
+        description="Supabase Storage key for user-uploaded previews; static path for built-ins",
     )
     is_builtin: bool = Field(default=False)
     creator_id: uuid.UUID | None = Field(
@@ -240,6 +240,18 @@ class DesignStyle(DesignStyleBase, UUIDModel, CreatedUpdatedAtMixin, table=True)
 
     creator: User | None = Relationship(back_populates="custom_styles")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="style")
+    
+    def to_response(self) -> DesignStyleResponse:
+        return DesignStyleResponse(
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            preview_image_key=self.preview_image_key,
+            is_builtin=self.is_builtin,
+            creator_id=self.creator_id,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
 
 
 class DesignStyleResponse(BaseModel):
@@ -249,10 +261,81 @@ class DesignStyleResponse(BaseModel):
     name: str
     description: str
     preview_image_key: str | None
-    is_builtin: bool
+    is_builtin: bool = False
     creator_id: uuid.UUID | None
-    created_at: datetime
-    updated_at: datetime | None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+BUILTIN_STYLES: list[DesignStyle] = [
+    DesignStyle(
+        name="Japandi",
+        is_builtin=True,
+        description=(
+            "A harmonious blend of Japanese minimalism and Scandinavian functionality. "
+            "Neutral tones, natural materials (oak, rattan, linen), clean lines, and an "
+            "emphasis on craftsmanship and negative space."
+        ),
+        preview_image_key="static/styles/japandi.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+    DesignStyle(
+        name="Industrial",
+        is_builtin=True,
+        description=(
+            "Raw, unfinished aesthetics inspired by urban lofts. Exposed brick, concrete, "
+            "steel beams, Edison bulbs, and reclaimed wood. Dark palette with metallic accents."
+        ),
+        preview_image_key="static/styles/industrial.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+    DesignStyle(
+        name="Mid-Century Modern",
+        is_builtin=True,
+        description=(
+            "1950s-60s American design: organic shapes, tapered legs, bold accent colours, "
+            "and a mix of natural and manufactured materials. Think Eames chairs and sunburst clocks."
+        ),
+        preview_image_key="static/styles/mid-century-modern.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+    DesignStyle(
+        name="Coastal",
+        is_builtin=True,
+        description=(
+            "Light, airy interiors evoking a beachside retreat. White and sand tones, "
+            "weathered wood, wicker, jute, and ocean-blue accents. Natural light is central."
+        ),
+        preview_image_key="static/styles/coastal.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+    DesignStyle(
+        name="Maximalist",
+        is_builtin=True,
+        description=(
+            "More is more. Layered patterns, rich jewel tones, eclectic art, global "
+            "textiles, and abundant plants. Every surface tells a story."
+        ),
+        preview_image_key="static/styles/maximalist.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+    DesignStyle(
+        name="Biophilic",
+        is_builtin=True,
+        description=(
+            "Design that brings nature indoors. Living walls, abundant houseplants, natural "
+            "stone, wood, water features, and large windows for natural light and views."
+        ),
+        preview_image_key="static/styles/biophilic.svg",
+        created_at=datetime(2026, 1, 1),
+        updated_at=datetime(2026, 1, 1),
+    ),
+]
 
 
 def get_metadata():

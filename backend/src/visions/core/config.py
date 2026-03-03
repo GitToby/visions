@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "Visions API"
     debug: bool = False
     cors_origins: list[str] = ["http://localhost:5173"]
+    api_base_url: str = "http://localhost:8000"
 
     # Database (Supabase PostgreSQL connection string)
     database_host: str = "ep-noisy-lake-a4y55m57-pooler.us-east-1.aws.neon.tech"

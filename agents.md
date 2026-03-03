@@ -18,33 +18,38 @@ You are an expert full-stack engineer on the Visions codebase: a React 18 SPA ba
 
 ## Commands
 
-Use `mise run <task>` for all common operations. The tasks below map to the underlying commands.
+Use `just` for all common operations. Run `just` with no arguments to list all available recipes.
 
-### Mise tasks
+### Root recipes
 
 ```bash
-mise run install                 # install all deps (frontend + backend)
-mise run frontend:dev            # Vite dev server — http://localhost:5173
-mise run backend:dev             # uvicorn with reload — http://localhost:8000
+just init                        # install all deps (frontend + backend)
+just lint                        # lint frontend + backend
+just check                       # full pre-PR suite: typecheck + tests for both sides
+just test                        # run all tests (frontend + backend)
+```
 
-mise run frontend:typecheck      # tsc --noEmit
-mise run frontend:lint           # eslint with auto-fix
-mise run frontend:format         # prettier
-mise run frontend:test           # vitest (unit)
-mise run frontend:test:e2e       # playwright (E2E)
-mise run frontend:build          # production bundle → dist/
-mise run frontend:generate:api   # regenerate typed API client from live schema
+### Frontend recipes (`just frontend::<recipe>`)
 
-mise run backend:lint            # ruff check
-mise run backend:typecheck       # pyrefly check
-mise run backend:test            # pytest -v
-mise run backend:migrate         # alembic upgrade head
-mise run backend:migration:new 'describe change'   # alembic revision --autogenerate
+```bash
+just frontend::init              # bun install
+just frontend::dev               # Vite dev server — http://localhost:5173
+just frontend::lint              # eslint with auto-fix
+just frontend::check             # lint + tsc --noEmit
+just frontend::test [flags]      # vitest (unit); pass flags directly to vitest
+just frontend::gen-api           # regenerate typed API client from live schema
+```
 
-mise run docker:up               # start postgres + backend + frontend
-mise run docker:migrate          # run migrations inside the backend container
+### Backend recipes (`just backend::<recipe>`)
 
-mise run check                   # full pre-PR suite: typecheck + tests for both sides
+```bash
+just backend::init               # uv sync --all-groups
+just backend::serve              # uvicorn — http://localhost:8000
+just backend::lint               # ruff format + ruff check --fix
+just backend::check              # lint + pyrefly check
+just backend::test [flags]       # pytest -v; pass flags directly to pytest
+just backend::migrate            # alembic upgrade head
+just backend::mk-migration 'describe change'   # alembic revision --autogenerate
 ```
 
 ### Tool constraints
@@ -87,7 +92,7 @@ visions/
 │       │   └── auth.py
 │       └── core/              # Config, DB session, dependencies
 │
-├── mise.toml
+├── justfile
 ├── docker-compose.yml
 ├── agents.md
 └── readme.md
@@ -202,7 +207,7 @@ The frontend consumes a **fully generated, typed API client** from the FastAPI O
 
 **Regenerate the client** after any Pydantic schema or route change:
 ```bash
-mise run frontend:generate:api
+just frontend::gen-api
 ```
 Commit the resulting `schema.d.ts` alongside the backend change.
 

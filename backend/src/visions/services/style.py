@@ -1,80 +1,19 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlmodel import or_, select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.models import DesignStyle, DesignStyleCreate
-
-# Curated built-in styles — seeded on first startup
-BUILTIN_STYLES: list[dict] = [
-    {
-        "name": "Japandi",
-        "description": (
-            "A harmonious blend of Japanese minimalism and Scandinavian functionality. "
-            "Neutral tones, natural materials (oak, rattan, linen), clean lines, and an "
-            "emphasis on craftsmanship and negative space."
-        ),
-    },
-    {
-        "name": "Industrial",
-        "description": (
-            "Raw, unfinished aesthetics inspired by urban lofts. Exposed brick, concrete, "
-            "steel beams, Edison bulbs, and reclaimed wood. Dark palette with metallic accents."
-        ),
-    },
-    {
-        "name": "Mid-Century Modern",
-        "description": (
-            "1950s-60s American design: organic shapes, tapered legs, bold accent colours, "
-            "and a mix of natural and manufactured materials. Think Eames chairs and sunburst clocks."
-        ),
-    },
-    {
-        "name": "Coastal",
-        "description": (
-            "Light, airy interiors evoking a beachside retreat. White and sand tones, "
-            "weathered wood, wicker, jute, and ocean-blue accents. Natural light is central."
-        ),
-    },
-    {
-        "name": "Maximalist",
-        "description": (
-            "More is more. Layered patterns, rich jewel tones, eclectic art, global "
-            "textiles, and abundant plants. Every surface tells a story."
-        ),
-    },
-    {
-        "name": "Biophilic",
-        "description": (
-            "Design that brings nature indoors. Living walls, abundant houseplants, natural "
-            "stone, wood, water features, and large windows for natural light and views."
-        ),
-    },
-]
+from visions.models import (
+    DesignStyle,
+    DesignStyleCreate,
+)
 
 
-async def seed_builtins(db: AsyncSession) -> None:
-    for style_data in BUILTIN_STYLES:
-        existing = await db.exec(
-            select(DesignStyle).where(
-                DesignStyle.name == style_data["name"],
-                DesignStyle.is_builtin == True,  # noqa: E712
-            )
-        )
-        if existing.first() is None:
-            db.add(DesignStyle(**style_data, is_builtin=True))
-    await db.commit()
-
-
-async def get_all_visible(db: AsyncSession, user_id: uuid.UUID) -> list[DesignStyle]:
-    """Return all built-in styles plus the requesting user's custom styles."""
-    result = await db.exec(
-        select(DesignStyle).where(
-            or_(DesignStyle.is_builtin == True, DesignStyle.creator_id == user_id)  # noqa: E712
-        )
-    )
-    return list(result.all())
+async def get_all_for_user(db: AsyncSession, user_id: uuid.UUID):
+    q = select(DesignStyle).where(DesignStyle.creator_id == user_id)
+    result = await db.exec(q)
+    return result.all()
 
 
 async def get_by_id(db: AsyncSession, style_id: uuid.UUID) -> DesignStyle | None:
@@ -93,7 +32,7 @@ async def create_custom(
     *,
     creator_id: uuid.UUID,
     data: DesignStyleCreate,
-    preview_image_key: str | None = None,
+    preview_image_key: str,
 ) -> DesignStyle:
     style = DesignStyle(
         name=data.name,

@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from visions.api import auth, generation, houses, styles
 from visions.core.config import settings
@@ -21,6 +24,9 @@ app.include_router(auth.router)
 app.include_router(houses.router)
 app.include_router(styles.router)
 app.include_router(generation.router)
+
+_static_dir = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
 @app.get("/health", tags=["meta"])

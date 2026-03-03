@@ -30,3 +30,54 @@ export function useMe(enabled = true) {
     retry: false,
   });
 }
+
+export function useHouses() {
+  return useQuery({
+    queryKey: ["get", "/houses"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/houses");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useHouse(houseId: string) {
+  return useQuery({
+    queryKey: ["get", "/houses/{house_id}", houseId],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/houses/{house_id}", {
+        params: { path: { house_id: houseId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!houseId,
+  });
+}
+
+export function useStyles() {
+  return useQuery({
+    queryKey: ["get", "/styles"],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/styles");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useGenerations(houseId: string) {
+  return useQuery({
+    queryKey: ["get", "/generation/houses/{house_id}", houseId],
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET(
+        "/generation/houses/{house_id}",
+        { params: { path: { house_id: houseId } } },
+      );
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!houseId,
+  });
+}
