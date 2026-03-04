@@ -1,6 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "../components/Navbar";
 import { GenerationGallery } from "../features/houses/detail/GenerationGallery";
 import { RoomUploader } from "../features/houses/detail/RoomUploader";
@@ -20,7 +20,7 @@ export function HouseDetailPage() {
   const queryClient = useQueryClient();
 
   const handleRoomAdded = (room: RoomResponse) => {
-    setRooms((prev) => [...prev, room]);
+    setRooms((prev) => [...prev.filter((r) => r.label !== room.label), room]);
   };
 
   const handleGenerate = async () => {
@@ -89,16 +89,6 @@ export function HouseDetailPage() {
         <section>
           <h2 className="text-lg font-semibold mb-4">Rooms</h2>
           <RoomUploader houseId={house.id} onRoomAdded={handleRoomAdded} />
-          {rooms.length > 0 && (
-            <ul className="mt-4 space-y-1">
-              {rooms.map((room) => (
-                <li key={room.id} className="flex items-center gap-2 text-sm">
-                  <span className="badge badge-success badge-xs" />
-                  {room.label}
-                </li>
-              ))}
-            </ul>
-          )}
         </section>
 
         {/* Styles */}

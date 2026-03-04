@@ -4,11 +4,11 @@ from logging.config import fileConfig
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
-from visions.core.config import settings
+from visions.core.config import SETTINGS
 from visions.models import get_metadata
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.database_url.get_secret_value())
+config.set_main_option("sqlalchemy.url", SETTINGS.database_url.get_secret_value())
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -35,7 +35,7 @@ def do_run_migrations(connection):
 
 
 async def run_migrations_online() -> None:
-    engine = create_async_engine(settings.database_url.get_secret_value())
+    engine = create_async_engine(SETTINGS.database_url.get_secret_value())
     async with engine.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await engine.dispose()

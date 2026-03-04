@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LoginModal } from "../features/auth/LoginModal";
 import { useAuth } from "../features/auth/AuthContext";
+import { LoginModal } from "../features/auth/LoginModal";
 
 export function LandingPage() {
   const { session } = useAuth();
@@ -37,9 +37,7 @@ export function LandingPage() {
       {/* How it works */}
       <section className="bg-base-200 py-16 px-6">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-10">
-            How it works
-          </h2>
+          <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="badge badge-primary badge-lg mb-3">1</div>
@@ -60,8 +58,8 @@ export function LandingPage() {
               <div className="badge badge-primary badge-lg mb-3">3</div>
               <h3 className="font-semibold mb-1">Pick a style & generate</h3>
               <p className="text-sm text-base-content/60">
-                Choose from curated design styles and get AI-rendered results
-                in seconds.
+                Choose from curated design styles and get AI-rendered results in
+                seconds.
               </p>
             </div>
           </div>

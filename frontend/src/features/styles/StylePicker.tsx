@@ -25,9 +25,7 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
   }
 
   if (!styles || styles.length === 0) {
-    return (
-      <p className="text-sm text-base-content/50">No styles available.</p>
-    );
+    return <p className="text-sm text-base-content/50">No styles available.</p>;
   }
 
   const toggle = (id: string) => {
@@ -51,14 +49,16 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
               selected ? "ring-2 ring-primary border-primary" : ""
             }`}
           >
-            {style.preview_image_url && (
+            {style.preview_image_url ? (
               <figure className="overflow-hidden rounded-t-box">
                 <img
                   src={style.preview_image_url}
                   alt={style.name}
-                  className="w-full h-32 object-cover"
+                  className="w-full h-48 object-cover"
                 />
               </figure>
+            ) : (
+              <div className="w-full h-48 bg-base-200 rounded-t-box" />
             )}
             <div className="card-body card-sm">
               <div className="flex items-center justify-between">

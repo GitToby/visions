@@ -61,11 +61,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <p className="label">We'll send you a magic link to sign in</p>
             </fieldset>
             <div className="modal-action">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onClose}
-              >
+              <button type="button" className="btn btn-ghost" onClick={onClose}>
                 Cancel
               </button>
               <button

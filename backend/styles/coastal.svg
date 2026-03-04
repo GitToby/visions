@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 270" width="400" height="270">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D6EEF8"/>
+      <stop offset="100%" stop-color="#B8DCF0"/>
+    </linearGradient>
+    <linearGradient id="ocean" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5B98B8"/>
+      <stop offset="100%" stop-color="#3A7FA3"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8D5A3"/>
+      <stop offset="100%" stop-color="#D4C08A"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky/wall -->
+  <rect width="400" height="270" fill="url(#sky)"/>
+  <!-- Sand floor -->
+  <rect x="0" y="195" width="400" height="75" fill="url(#floor)"/>
+  <!-- Window frame -->
+  <rect x="130" y="30" width="140" height="160" fill="url(#ocean)" rx="4"/>
+  <rect x="130" y="30" width="140" height="160" fill="none" stroke="#F5F5F0" stroke-width="6" rx="4"/>
+  <!-- Window cross -->
+  <line x1="200" y1="30" x2="200" y2="190" stroke="#F5F5F0" stroke-width="6"/>
+  <line x1="130" y1="110" x2="270" y2="110" stroke="#F5F5F0" stroke-width="6"/>
+  <!-- Horizon line in window -->
+  <rect x="136" y="108" width="128" height="40" fill="#7AB8D3" opacity="0.5"/>
+  <!-- Wave suggestion in window -->
+  <path d="M136,130 Q165,120 194,130 Q222,140 250,130 Q265,124 264,130 L264,150 L136,150 Z" fill="#3A7FA3" opacity="0.4"/>
+  <!-- Curtain left -->
+  <path d="M130,30 Q110,80 115,190 L130,190 Z" fill="#F5F5F0" opacity="0.6"/>
+  <!-- Curtain right -->
+  <path d="M270,30 Q290,80 285,190 L270,190 Z" fill="#F5F5F0" opacity="0.6"/>
+  <!-- Jute rug -->
+  <ellipse cx="200" cy="210" rx="90" ry="18" fill="#C49A6C" opacity="0.35"/>
+  <!-- Label -->
+  <rect x="0" y="230" width="400" height="40" fill="#2A5F7A" opacity="0.8"/>
+  <text x="200" y="252" font-family="Georgia, serif" font-size="16" font-weight="400" fill="#F5F5F0" text-anchor="middle" letter-spacing="5">COASTAL</text>
+</svg>

@@ -1,7 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
-import type { components } from "../../lib/api/schema";
 import { useMe } from "../../lib/api/hooks";
+import type { components } from "../../lib/api/schema";
 import { supabase } from "../../lib/supabase";
 
 type UserResponse = components["schemas"]["UserResponse"];

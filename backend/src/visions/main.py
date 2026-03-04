@@ -1,24 +1,43 @@
+import time
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from loguru import logger
 
 from visions.api import auth, generation, houses, styles
-from visions.core.config import settings
+from visions.core.config import SETTINGS
 
+logger.info("starting")
 app = FastAPI(
-    title=settings.app_name,
+    title=SETTINGS.app_name,
     version="0.1.0",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=SETTINGS.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    logger.info(
+        "{method} {path} → {status} ({elapsed:.1f}ms)",
+        method=request.method,
+        path=request.url.path,
+        status=response.status_code,
+        elapsed=elapsed_ms,
+    )
+    return response
+
 
 app.include_router(auth.router)
 app.include_router(houses.router)

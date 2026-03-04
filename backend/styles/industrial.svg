@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 270" width="400" height="270">
+  <defs>
+    <pattern id="brick" x="0" y="0" width="60" height="30" patternUnits="userSpaceOnUse">
+      <rect width="60" height="30" fill="#2C2C2C"/>
+      <rect x="1" y="1" width="56" height="13" fill="#383232" rx="1"/>
+      <rect x="31" y="16" width="56" height="13" fill="#383232" rx="1"/>
+      <rect x="-29" y="16" width="56" height="13" fill="#383232" rx="1"/>
+    </pattern>
+    <linearGradient id="vignette" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+  <!-- Brick wall background -->
+  <rect width="400" height="270" fill="url(#brick)"/>
+  <!-- Concrete floor -->
+  <rect x="0" y="195" width="400" height="75" fill="#4A4A4A"/>
+  <line x1="0" y1="195" x2="400" y2="195" stroke="#5A5A5A" stroke-width="2"/>
+  <!-- Metal beam horizontal -->
+  <rect x="0" y="60" width="400" height="12" fill="#1A1A1A"/>
+  <rect x="0" y="61" width="400" height="3" fill="#5A5A5A" opacity="0.4"/>
+  <!-- Metal pipe vertical -->
+  <rect x="60" y="0" width="10" height="270" fill="#1A1A1A" opacity="0.7"/>
+  <rect x="330" y="0" width="10" height="270" fill="#1A1A1A" opacity="0.7"/>
+  <!-- Edison bulb -->
+  <line x1="200" y1="0" x2="200" y2="72" stroke="#6E6E6E" stroke-width="2"/>
+  <ellipse cx="200" cy="86" rx="14" ry="18" fill="#D4882A" opacity="0.85"/>
+  <ellipse cx="200" cy="86" rx="7" ry="9" fill="#F5C84A" opacity="0.7"/>
+  <!-- Rust accent -->
+  <rect x="0" y="0" width="400" height="270" fill="url(#vignette)"/>
+  <!-- Label -->
+  <rect x="0" y="230" width="400" height="40" fill="#1A1A1A" opacity="0.85"/>
+  <text x="200" y="252" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#B5501B" text-anchor="middle" letter-spacing="5">INDUSTRIAL</text>
+</svg>

@@ -1,62 +1,67 @@
 import uuid
+from typing import Annotated
 
-from fastapi import APIRouter, File, Form, UploadFile, status
+from fastapi import APIRouter, Body, File, Form, UploadFile, status
 
 from visions.core.db import DBSession
 from visions.core.security import CurrentUser
-from visions.models import HouseCreate, HouseResponse, RoomResponse
+from visions.models import HouseCreate, HouseResponse, HouseUpdate, RoomResponse
 from visions.services import house as house_service
-from visions.services import storage as storage_service
 
 router = APIRouter(prefix="/houses", tags=["houses"])
 
 
 @router.get("", response_model=list[HouseResponse])
-async def list_houses(db: DBSession, current_user: CurrentUser) -> list[HouseResponse]:
-    houses = await house_service.get_all_for_owner(db, current_user.id)
-    result = []
-    for h in houses:
-        count = await house_service.count_rooms(db, h.id)
-        result.append(HouseResponse.model_validate(h).model_copy(update={"room_count": count}))
-    return result
+async def list_houses(db: DBSession, current_user: CurrentUser) -> list[HouseResponse]: ...
 
 
 @router.post("", response_model=HouseResponse, status_code=status.HTTP_201_CREATED)
 async def create_house(
-    payload: HouseCreate,
-    db: DBSession,
-    current_user: CurrentUser,
+    db: DBSession, current_user: CurrentUser, payload: Annotated[HouseCreate, Body(...)]
 ) -> HouseResponse:
     house = await house_service.create(db, owner_id=current_user.id, data=payload)
-    return HouseResponse.model_validate(house)
+    return await house.to_response()
 
 
 @router.get("/{house_id}", response_model=HouseResponse)
-async def get_house(house_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> HouseResponse:
+async def get_house(
+    db: DBSession,
+    current_user: CurrentUser,
+    house_id: uuid.UUID,
+) -> HouseResponse:
     house = await house_service.get_or_404(db, house_id, current_user.id)
-    count = await house_service.count_rooms(db, house.id)
-    return HouseResponse.model_validate(house).model_copy(update={"room_count": count})
+    return await house.to_response()
+
+
+@router.put("/{house_id}", response_model=HouseResponse)
+async def update_house(
+    db: DBSession,
+    current_user: CurrentUser,
+    house_id: uuid.UUID,
+    house_update: Annotated[HouseUpdate, Body(...)],
+) -> HouseResponse: ...
 
 
 @router.delete("/{house_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_house(house_id: uuid.UUID, db: DBSession, current_user: CurrentUser) -> None:
+async def delete_house(db: DBSession, current_user: CurrentUser, house_id: uuid.UUID) -> None:
     house = await house_service.get_or_404(db, house_id, current_user.id)
     await house_service.delete(db, house)
 
 
 @router.post("/{house_id}/rooms", response_model=RoomResponse, status_code=status.HTTP_201_CREATED)
 async def upload_room(
-    house_id: uuid.UUID,
     db: DBSession,
     current_user: CurrentUser,
+    house_id: uuid.UUID,
     image: UploadFile = File(...),  # noqa B008
     label: str = Form(default="Room"),
-) -> RoomResponse:
-    await house_service.get_or_404(db, house_id, current_user.id)
-    file_bytes = await image.read()
-    image_key = await storage_service.upload_image(
-        file_bytes, image.filename or "room.jpg", prefix=f"rooms/{house_id}"
-    )
-    room = await house_service.add_room(db, house_id=house_id, label=label, image_key=image_key)
-    image_url = storage_service.presigned_url(image_key)
-    return RoomResponse.model_validate(room).model_copy(update={"original_image_url": image_url})
+) -> RoomResponse: ...
+
+
+@router.delete("/{house_id}/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_room(
+    house_id: uuid.UUID,
+    room_id: uuid.UUID,
+    db: DBSession,
+    current_user: CurrentUser,
+) -> None: ...

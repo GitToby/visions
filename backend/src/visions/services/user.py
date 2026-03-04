@@ -1,11 +1,13 @@
 import uuid
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from visions.models import User
 
 
 async def get_by_id(db: AsyncSession, user_id: str) -> User | None:
+    logger.debug("Fetching user | user_id={}", user_id)
     return await db.get(User, uuid.UUID(user_id))
 
 
@@ -23,8 +25,10 @@ async def upsert_from_supabase(db: AsyncSession, payload: dict) -> User:
 
     user = await db.get(User, user_id)
     if user is None:
+        logger.info("New user — creating | user_id={} email={}", user_id, payload.get("email"))
         user = User(id=user_id, email=payload["email"], name=name, picture=picture)
     else:
+        logger.debug("Existing user — updating metadata | user_id={}", user_id)
         user.name = name
         user.picture = picture
     db.add(user)

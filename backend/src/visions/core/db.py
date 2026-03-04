@@ -5,9 +5,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.core.config import settings
+from visions.core.config import SETTINGS
 
-engine = create_async_engine(settings.database_url.get_secret_value(), echo=settings.debug)
+engine = create_async_engine(SETTINGS.database_url.get_secret_value(), echo=SETTINGS.debug)
 
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

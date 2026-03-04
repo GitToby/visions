@@ -1,6 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api/hooks";
 
 interface NewProjectModalProps {

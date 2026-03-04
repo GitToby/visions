@@ -1,12 +1,16 @@
 import uuid
-from dataclasses import dataclass
+from abc import ABC, abstractmethod
 from datetime import UTC, datetime
-from enum import StrEnum
+from typing import override
 
+from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import TIMESTAMP, text
+from sqlalchemy import TIMESTAMP, UniqueConstraint, text
 from sqlalchemy.event import listens_for
 from sqlmodel import Field, Relationship, SQLModel
+
+from visions.core.config import SETTINGS
+from visions.services import storage
 
 
 def _now() -> datetime:
@@ -19,6 +23,7 @@ def update_timestamp(_, __, target):
 
 
 # ─── Mixins ───────────────────────────────────────────────────────────────────
+# util mixins that can be used across multiple table models
 
 
 class UUIDModel(SQLModel):
@@ -49,7 +54,34 @@ class CreatedUpdatedAtMixin(SQLModel):
     )
 
 
+class FileStoreMixin(ABC):
+    """Adds storage utils to link to a file in the file store."""
+
+    __bucket__: str
+
+    @property
+    @abstractmethod
+    def image_key(self) -> str:
+        """The key used to store the image in S3"""
+        ...
+
+    async def has_image(self) -> bool:
+        """Check if the room has an image"""
+        return await storage.file_exists(bucket=self.__bucket__, key=self.image_key)
+
+    async def get_image_url(self) -> str | None:
+        """Returns a presigned URL for the image"""
+        if await self.has_image():
+            return await storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
+        return None
+
+    async def upload_image(self, image: UploadFile) -> None:
+        """Upload the image to S3"""
+        await storage.upload_file(image, bucket=self.__bucket__, key=self.image_key)
+
+
 # ─── User ─────────────────────────────────────────────────────────────────────
+# users are a mirror of the oauth provider data to keep things in sync
 
 
 class UserBase(SQLModel):
@@ -68,7 +100,6 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
     id: uuid.UUID = Field(primary_key=True)
 
     houses: list[House] = Relationship(back_populates="owner")
-    custom_styles: list[DesignStyle] = Relationship(back_populates="creator")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -93,6 +124,7 @@ class UserResponse(BaseModel):
 
 
 # ─── House ────────────────────────────────────────────────────────────────────
+# A house is the container of rooms. It is owned by a user
 
 
 class HouseBase(SQLModel):
@@ -113,7 +145,7 @@ class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
     owner: User = Relationship(back_populates="houses")
     rooms: list[Room] = Relationship(back_populates="house")
 
-    def to_response(self) -> HouseResponse:
+    async def to_response(self) -> HouseResponse:
         room_count = len(self.rooms)
         return HouseResponse(
             id=self.id,
@@ -122,6 +154,7 @@ class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
             created_at=self.created_at,
             updated_at=self.updated_at,
             room_count=room_count,
+            rooms=[await room.to_response() for room in self.rooms],
         )
 
 
@@ -133,104 +166,114 @@ class HouseResponse(BaseModel):
     owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None
-    room_count: int | None = Field(default=None, description="Number of rooms in the house")
+    room_count: int
+    rooms: list[RoomResponse]
 
 
 # ─── Room ─────────────────────────────────────────────────────────────────────
+# A room belongs to a house, and has a label; this is its unique identifier.
+# Rooms are immutible when created - but their image can be uploaded multiple times.
+# Delete a room will delete all its images.
 
 
 class RoomBase(SQLModel):
-    label: str = Field(default="Room", max_length=100)
+    """Base data used across the room model"""
+
+    label: str
+    """What is the name of the room, should be unique in the house"""
 
 
 class RoomCreate(RoomBase):
+    """Data needed to create a room"""
+
     house_id: uuid.UUID
+    """The house this room belongs to"""
 
 
-class RoomUpdate(SQLModel):
-    label: str | None = Field(default=None, max_length=100)
+class RoomDelete(RoomCreate):
+    """Data needed to delete a room"""
+
+    pass
 
 
-class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True):
+    """
+    Canonical Room model stored in the database.
+    """
+
+    __bucket__: str = SETTINGS.s3_bucket__rooms
+    __table_args__ = (UniqueConstraint("house_id", "label"),)
+
     house_id: uuid.UUID = Field(foreign_key="house.id", index=True)
-    original_image_key: str = Field(
-        max_length=500,
-        description="Supabase Storage object key for the uploaded room photo",
-    )
+    label: str = Field(max_length=100)
+
+    @property
+    @override
+    def image_key(self):
+        return f"{self.id}/{self.label}"
 
     house: House = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="room")
 
-    def to_response(self) -> RoomResponse:
+    async def to_response(self) -> RoomResponse:
         return RoomResponse(
-            id=self.id,
             house_id=self.house_id,
             label=self.label,
-            original_image_key=self.original_image_key,
+            image_url=await self.get_image_url(),
             created_at=self.created_at,
             updated_at=self.updated_at,
         )
 
 
 class RoomResponse(BaseModel):
+    """Schema used in the API Response"""
+
     model_config = ConfigDict(from_attributes=True)
 
-    id: uuid.UUID
     house_id: uuid.UUID
     label: str
-    original_image_key: str
+    image_url: str | None
     created_at: datetime
     updated_at: datetime | None
 
 
 # ─── Generation job ───────────────────────────────────────────────────────────
+# async style generation jobs
+# these are the result of a combination of a Room and a DesignStyle
 
 
-class JobStatus(StrEnum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
+class GenerationJobBase(SQLModel):
+    pass
 
 
-class GenerationRequest(BaseModel):
-    """Triggers one generation job per (room, style) pair in the cartesian product."""
-
-    house_id: uuid.UUID
-    room_ids: list[uuid.UUID]
-    style_ids: list[uuid.UUID]
-
-    def create_jobs(self) -> list[GenerationJob]:
-        """create all the generation jobs for each (room, style) pair."""
-        return [
-            GenerationJob(room_id=room_id, style_id=style_id)
-            for room_id in self.room_ids
-            for style_id in self.style_ids
-        ]
+class GenerationJobCreate(SQLModel):
+    room_id: uuid.UUID
+    style: str
 
 
-class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, table=True):
+class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True):
+    __bucket__: str = SETTINGS.s3_bucket__rooms
+
+    submitter_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     room_id: uuid.UUID = Field(foreign_key="room.id", index=True)
-    style_id: uuid.UUID = Field(foreign_key="designstyle.id", index=True)
-    status: JobStatus = Field(default="pending")
-    result_image_key: str | None = Field(
-        default=None,
-        max_length=500,
-        description="Supabase Storage key populated on successful generation",
-    )
-    error_message: str | None = Field(default=None)
+    style: str = Field(index=True)
+
+    error_message: str | None = None
     completed_at: datetime | None = Field(default=None, sa_type=TIMESTAMP)
 
+    @property
+    @override
+    def image_key(self):
+        return f"generation-jobs/{self.room_id}/{self.style}"
+
     room: Room = Relationship(back_populates="generation_jobs")
-    style: DesignStyle = Relationship(back_populates="generation_jobs")
 
     def to_response(self) -> GenerationJobResponse:
         return GenerationJobResponse(
             id=self.id,
             room_id=self.room_id,
-            style_id=self.style_id,
-            status=self.status,
-            result_image_key=self.result_image_key,
+            style=self.style,
+            image_key=self.image_key,
             error_message=self.error_message,
             completed_at=self.completed_at,
             created_at=self.created_at,
@@ -243,9 +286,8 @@ class GenerationJobResponse(BaseModel):
 
     id: uuid.UUID
     room_id: uuid.UUID
-    style_id: uuid.UUID
-    status: JobStatus
-    result_image_key: str | None
+    style: str
+    image_key: str | None
     error_message: str | None
     completed_at: datetime | None
     created_at: datetime
@@ -253,133 +295,63 @@ class GenerationJobResponse(BaseModel):
 
 
 # ─── Design style ─────────────────────────────────────────────────────────────
+# A design style is a hypotheical set of rooms that have particular characteristics
+# that can be used to generate new rooms from house rooms.
+# for now this is not a table and isnt user creatable
 
 
-class DesignStyleBase(SQLModel):
-    name: str = Field(max_length=100)
-    description: str = Field(max_length=2000)
-
-
-class DesignStyleCreate(DesignStyleBase):
-    pass
-
-
-class DesignStyleUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=100)
-    description: str | None = Field(default=None, max_length=2000)
-
-
-class DesignStyle(DesignStyleBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
-    preview_image_key: str = Field(
-        max_length=500,
-        description="Supabase Storage key for user-uploaded previews; static path for built-ins",
-    )
-    is_builtin: bool = Field(default=False)
-    creator_id: uuid.UUID | None = Field(
-        default=None,
-        foreign_key="user.id",
-        index=True,
-        description="Null for built-in styles; set to the creating user's id for custom styles",
-    )
-
-    creator: User | None = Relationship(back_populates="custom_styles")
-    generation_jobs: list[GenerationJob] = Relationship(back_populates="style")
-
-    def to_response(self) -> DesignStyleResponse:
-        return DesignStyleResponse(
-            id=self.id,
-            name=self.name,
-            description=self.description,
-            preview_image_key=self.preview_image_key,
-            is_builtin=self.is_builtin,
-            creator_id=self.creator_id,
-            created_at=self.created_at,
-            updated_at=self.updated_at,
-        )
-
-
-class DesignStyleResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
+class DesignStyle(BaseModel):
     name: str
     description: str
-    preview_image_key: str | None
-    is_builtin: bool = False
-    creator_id: uuid.UUID | None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
 
 
 BUILTIN_STYLES: list[DesignStyle] = [
     DesignStyle(
         name="Japandi",
-        is_builtin=True,
         description=(
             "A harmonious blend of Japanese minimalism and Scandinavian functionality. "
             "Neutral tones, natural materials (oak, rattan, linen), clean lines, and an "
             "emphasis on craftsmanship and negative space."
         ),
-        preview_image_key="static/styles/japandi.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
     DesignStyle(
         name="Industrial",
-        is_builtin=True,
         description=(
             "Raw, unfinished aesthetics inspired by urban lofts. Exposed brick, concrete, "
             "steel beams, Edison bulbs, and reclaimed wood. Dark palette with metallic accents."
         ),
-        preview_image_key="static/styles/industrial.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
     DesignStyle(
         name="Mid-Century Modern",
-        is_builtin=True,
         description=(
             "1950s-60s American design: organic shapes, tapered legs, bold accent colours, "
             "and a mix of natural and manufactured materials. Think Eames chairs and sunburst clocks."
         ),
-        preview_image_key="static/styles/mid-century-modern.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
     DesignStyle(
         name="Coastal",
-        is_builtin=True,
         description=(
             "Light, airy interiors evoking a beachside retreat. White and sand tones, "
             "weathered wood, wicker, jute, and ocean-blue accents. Natural light is central."
         ),
-        preview_image_key="static/styles/coastal.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
     DesignStyle(
         name="Maximalist",
-        is_builtin=True,
         description=(
             "More is more. Layered patterns, rich jewel tones, eclectic art, global "
             "textiles, and abundant plants. Every surface tells a story."
         ),
-        preview_image_key="static/styles/maximalist.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
     DesignStyle(
         name="Biophilic",
-        is_builtin=True,
         description=(
             "Design that brings nature indoors. Living walls, abundant houseplants, natural "
             "stone, wood, water features, and large windows for natural light and views."
         ),
-        preview_image_key="static/styles/biophilic.svg",
-        created_at=datetime(2026, 1, 1),
-        updated_at=datetime(2026, 1, 1),
     ),
 ]
+
+BUILTIN_STYLES_KV = {style.name: style for style in BUILTIN_STYLES}
 
 
 def get_metadata():

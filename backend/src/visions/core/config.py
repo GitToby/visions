@@ -30,15 +30,28 @@ class Settings(BaseSettings):
     # Supabase
     supabase_project_id: str = "sutnrwodqzpfvuuboksu"
     supabase_secret_key: SecretStr
-    supabase_storage_bucket: str = "visions"
+
+    # S3-compatible storage (Supabase Storage S3 endpoint)
+    # Generate these from: Supabase Dashboard > Project Settings > Storage > S3 Access Keys
+    s3_access_key_id: str
+    s3_secret_access_key: SecretStr
+    s3_region: str = "eu-west-1"
+    s3_bucket__rooms: str = "visions-rooms"
+    s3_bucket__styles: str = "visions-styles"
 
     @property
     def supabase_url(self):
         return f"https://{self.supabase_project_id}.supabase.co"
 
-    # Gemini
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash-exp"
+    @property
+    def s3_endpoint_url(self) -> str:
+        return f"https://{self.supabase_project_id}.storage.supabase.co/storage/v1/s3"
+
+    # Gemini via pydantic-ai
+    # https://aistudio.google.com/api-keys
+    gemini_api_key: SecretStr
+    # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-image
+    gemini_model: str = "gemini-2.5-flash-image"
 
 
 settings = Settings()

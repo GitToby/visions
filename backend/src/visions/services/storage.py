@@ -1,87 +1,78 @@
-"""Supabase Storage file service."""
+"""S3-compatible file service"""
 
-import uuid
-from pathlib import PurePosixPath
-
+import boto3
+from botocore.exceptions import ClientError
+from cachetools.func import ttl_cache
 from fastapi import HTTPException, status
-from supabase import Client, create_client
+from fastapi.datastructures import UploadFile
+from loguru import logger
 
-from visions.core.config import settings
+from visions.core.config import SETTINGS
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
-_supabase: Client = create_client(
-    settings.supabase_url, settings.supabase_secret_key.get_secret_value()
+
+_s3 = boto3.client(
+    "s3",
+    endpoint_url=SETTINGS.s3_endpoint_url,
+    aws_access_key_id=SETTINGS.s3_access_key_id,
+    aws_secret_access_key=SETTINGS.s3_secret_access_key.get_secret_value(),
+    region_name=SETTINGS.s3_region,
 )
 
 
-def _key(prefix: str, filename: str) -> str:
-    ext = PurePosixPath(filename).suffix
-    return f"{prefix}/{uuid.uuid4()}{ext}"
-
-
-async def upload_image(file_bytes: bytes, filename: str, prefix: str = "uploads") -> str:
-    """Upload image bytes and return the storage path key."""
-    key = _key(prefix, filename)
+async def file_exists(*, bucket: str, key: str) -> bool:
+    """Checks if a key exists in the bucket."""
     try:
-        _supabase.storage.from_(settings.supabase_storage_bucket).upload(
-            key,
-            file_bytes,
-            {"content-type": _guess_content_type(filename)},
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Image upload failed",
-        ) from exc
-    return key
+        _s3.head_object(Bucket=bucket, Key=key)
+        return True
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") == "404":
+            return False
+        raise
 
 
-async def upload_image_from_bytes(image_bytes: bytes, key: str) -> None:
-    """Store raw bytes at an explicit key (used by generation service)."""
+async def upload_file(file: UploadFile, *, bucket: str, key: str):
+    """Uploads a file to S3."""
+    size_kb = (file.size or 0) / 1024
+    # todo, check if image by known codecs - then alter the image to be of a standard size
+    logger.debug(f"Uploading generated image | {bucket}/{key} {size_kb=:.1f}KB")
     try:
-        _supabase.storage.from_(settings.supabase_storage_bucket).upload(
-            key,
-            image_bytes,
-            {"content-type": "image/png", "upsert": "true"},
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Result image upload failed",
-        ) from exc
+        _s3.upload_fileobj(file.file, bucket, key)
+    except ClientError as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
 
 
-def presigned_url(key: str) -> str:
-    """Generate a time-limited signed URL for a stored object."""
+@ttl_cache(ttl=SIGNED_URL_EXPIRES - 10)
+async def s3_presigned_url(*, bucket: str, key: str):
+    """Generate a presigned URL for an S3 object."""
+    logger.debug(f"Generating presigned URL | {bucket}/{key}")
     try:
-        res = _supabase.storage.from_(settings.supabase_storage_bucket).create_signed_url(
-            key, SIGNED_URL_EXPIRES
+        url = _s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": SETTINGS.s3_bucket__rooms, "Key": key},
+            ExpiresIn=SIGNED_URL_EXPIRES,
         )
-        return res["signedURL"]
-    except Exception as exc:
+    except ClientError as exc:
+        logger.error("Presigned URL generation failed | key={} error={}", key, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Could not generate image URL",
         ) from exc
+    return url
 
 
 def download_image(key: str) -> bytes:
     """Download a stored object and return its bytes."""
+    logger.debug("Downloading image | key={}", key)
     try:
-        return bytes(_supabase.storage.from_(settings.supabase_storage_bucket).download(key))
-    except Exception as exc:
+        response = _s3.get_object(Bucket=SETTINGS.s3_bucket__rooms, Key=key)
+        data: bytes = response["Body"].read()
+    except ClientError as exc:
+        logger.error("Image download failed | key={} error={}", key, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Image download failed",
         ) from exc
-
-
-def _guess_content_type(filename: str) -> str:
-    ext = PurePosixPath(filename).suffix.lower()
-    return {
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".png": "image/png",
-        ".webp": "image/webp",
-    }.get(ext, "application/octet-stream")
+    logger.debug("Image downloaded | key={} size={:.1f}KB", key, len(data) / 1024)
+    return data

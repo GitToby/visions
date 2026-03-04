@@ -8,8 +8,8 @@ default:
 
 init: frontend::init backend::init
 
-lint: frontend::lint backend::lint
-
 check: frontend::check backend::check
+
+lint: frontend::lint backend::lint check
 
 test: frontend::test backend::test

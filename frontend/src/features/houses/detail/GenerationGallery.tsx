@@ -55,7 +55,7 @@ export function GenerationGallery({ houseId }: GenerationGalleryProps) {
   const { data: styles } = useStyles();
 
   const hasActive = jobs?.some(
-    (j) => j.status === "pending" || j.status === "processing",
+    (j) => j.status === "pending" || j.status === "processing"
   );
 
   // Re-render with polling when jobs are active — achieved by re-querying

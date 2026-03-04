@@ -21,7 +21,8 @@ export function Navbar() {
             >
               <div className="bg-neutral text-neutral-content w-10 rounded-full">
                 <span className="text-sm font-medium">
-                  {user.name?.charAt(0).toUpperCase() ?? user.email.charAt(0).toUpperCase()}
+                  {user.name?.charAt(0).toUpperCase() ??
+                    user.email.charAt(0).toUpperCase()}
                 </span>
               </div>
             </button>
