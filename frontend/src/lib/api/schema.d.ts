@@ -4,26 +4,6 @@
  */
 
 export interface paths {
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Login
-         * @description Return the Supabase Google OAuth URL for the client to redirect to.
-         */
-        get: operations["login_auth_login_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -88,7 +68,8 @@ export interface paths {
         };
         /** Get House */
         get: operations["get_house_houses__house_id__get"];
-        put?: never;
+        /** Update House */
+        put: operations["update_house_houses__house_id__put"];
         post?: never;
         /** Delete House */
         delete: operations["delete_house_houses__house_id__delete"];
@@ -106,9 +87,27 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Upload Room */
-        post: operations["upload_room_houses__house_id__rooms_post"];
+        /** Create Room */
+        post: operations["create_room_houses__house_id__rooms_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/houses/{house_id}/rooms/{room_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Room */
+        put: operations["update_room_houses__house_id__rooms__room_id__put"];
+        post?: never;
+        /** Delete Room */
+        delete: operations["delete_room_houses__house_id__rooms__room_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -124,26 +123,8 @@ export interface paths {
         /** List Styles */
         get: operations["list_styles_styles_get"];
         put?: never;
-        /** Create Style */
-        post: operations["create_style_styles_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/styles/{style_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         post?: never;
-        /** Delete Style */
-        delete: operations["delete_style_styles__style_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -158,8 +139,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start Generation */
-        post: operations["start_generation_generation_post"];
+        /**
+         * Start Generation For Room
+         * @description Submit and generate an AI generation request for a room in the house.
+         */
+        post: operations["start_generation_for_room_generation_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -173,7 +157,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Jobs For House */
+        /**
+         * List Jobs For House
+         * @description See all generation jobs for a house.
+         */
         get: operations["list_jobs_for_house_generation_houses__house_id__get"];
         put?: never;
         post?: never;
@@ -190,7 +177,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Job */
+        /**
+         * Get Job
+         * @description Get the specific genertaion job, if it exists
+         */
         get: operations["get_job_generation_jobs__job_id__get"];
         put?: never;
         post?: never;
@@ -221,17 +211,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** Body_create_style_styles_post */
-        Body_create_style_styles_post: {
-            /** Name */
-            name: string;
-            /** Description */
-            description: string;
-            /** Preview Image */
-            preview_image?: string | null;
-        };
-        /** Body_upload_room_houses__house_id__rooms_post */
-        Body_upload_room_houses__house_id__rooms_post: {
+        /** Body_create_room_houses__house_id__rooms_post */
+        Body_create_room_houses__house_id__rooms_post: {
             /** Image */
             image: string;
             /**
@@ -240,32 +221,27 @@ export interface components {
              */
             label: string;
         };
-        /** DesignStyleResponse */
-        DesignStyleResponse: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
+        /** Body_update_room_houses__house_id__rooms__room_id__put */
+        Body_update_room_houses__house_id__rooms__room_id__put: {
+            /** Image */
+            image: string;
+        };
+        /** DesignStyle */
+        DesignStyle: {
             /** Name */
             name: string;
             /** Description */
             description: string;
-            /** Preview Image Key */
-            preview_image_key: string | null;
-            /** Preview Image Url */
-            preview_image_url?: string | null;
-            /** Is Builtin */
-            is_builtin: boolean;
-            /** Creator Id */
-            creator_id: string | null;
+        };
+        /** GenerationJobCreate */
+        GenerationJobCreate: {
             /**
-             * Created At
-             * Format: date-time
+             * Room Id
+             * Format: uuid
              */
-            created_at: string;
-            /** Updated At */
-            updated_at: string | null;
+            room_id: string;
+            /** Style */
+            style: string;
         };
         /** GenerationJobResponse */
         GenerationJobResponse: {
@@ -279,14 +255,10 @@ export interface components {
              * Format: uuid
              */
             room_id: string;
-            /**
-             * Style Id
-             * Format: uuid
-             */
-            style_id: string;
-            status: components["schemas"]["JobStatus"];
-            /** Result Image Key */
-            result_image_key: string | null;
+            /** Style */
+            style: string;
+            /** Image Key */
+            image_key: string | null;
             /** Error Message */
             error_message: string | null;
             /** Completed At */
@@ -298,21 +270,6 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-        };
-        /**
-         * GenerationRequest
-         * @description Triggers one generation job per (room, style) pair in the cartesian product.
-         */
-        GenerationRequest: {
-            /**
-             * House Id
-             * Format: uuid
-             */
-            house_id: string;
-            /** Room Ids */
-            room_ids: string[];
-            /** Style Ids */
-            style_ids: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -345,23 +302,20 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-            /**
-             * Room Count
-             * @description Number of rooms in the house
-             */
-            room_count?: number | null;
+            /** Room Count */
+            room_count: number;
+            /** Rooms */
+            rooms: components["schemas"]["RoomResponse"][];
+        };
+        /** HouseUpdate */
+        HouseUpdate: {
+            /** Name */
+            name?: string | null;
         };
         /**
-         * JobStatus
-         * @enum {string}
+         * RoomResponse
+         * @description Schema used in the API Response
          */
-        JobStatus: "pending" | "processing" | "completed" | "failed";
-        /** LoginResponse */
-        LoginResponse: {
-            /** Url */
-            url: string;
-        };
-        /** RoomResponse */
         RoomResponse: {
             /**
              * Id
@@ -375,8 +329,8 @@ export interface components {
             house_id: string;
             /** Label */
             label: string;
-            /** Original Image Key */
-            original_image_key: string;
+            /** Image Url */
+            image_url: string | null;
             /**
              * Created At
              * Format: date-time
@@ -428,26 +382,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    login_auth_login_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoginResponse"];
-                };
-            };
-        };
-    };
     get_me_auth_me_get: {
         parameters: {
             query?: never;
@@ -570,6 +504,41 @@ export interface operations {
             };
         };
     };
+    update_house_houses__house_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                house_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_house_houses__house_id__delete: {
         parameters: {
             query?: never;
@@ -599,7 +568,7 @@ export interface operations {
             };
         };
     };
-    upload_room_houses__house_id__rooms_post: {
+    create_room_houses__house_id__rooms_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -610,7 +579,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_upload_room_houses__house_id__rooms_post"];
+                "multipart/form-data": components["schemas"]["Body_create_room_houses__house_id__rooms_post"];
             };
         };
         responses: {
@@ -622,6 +591,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RoomResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_room_houses__house_id__rooms__room_id__put: {
+        parameters: {
+            query?: {
+                label?: string | null;
+            };
+            header?: never;
+            path: {
+                house_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_update_room_houses__house_id__rooms__room_id__put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_room_houses__house_id__rooms__room_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                house_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -649,12 +686,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DesignStyleResponse"][];
+                    "application/json": components["schemas"]["DesignStyle"][];
                 };
             };
         };
     };
-    create_style_styles_post: {
+    start_generation_for_room_generation_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -663,69 +700,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_create_style_styles_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DesignStyleResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_style_styles__style_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                style_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    start_generation_generation_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerationRequest"];
+                "application/json": components["schemas"]["GenerationJobCreate"];
             };
         };
         responses: {

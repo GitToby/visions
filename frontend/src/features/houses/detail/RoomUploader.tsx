@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Bath,
   Bed,
   CheckCircle,
@@ -20,6 +21,7 @@ type RoomResponse = components["schemas"]["RoomResponse"];
 interface RoomUploaderProps {
   houseId: string;
   onRoomAdded: (room: RoomResponse) => void;
+  initialRooms?: RoomResponse[];
 }
 
 const ROOM_TYPES: Array<{ label: string; Icon: LucideIcon }> = [
@@ -34,6 +36,7 @@ const ROOM_TYPES: Array<{ label: string; Icon: LucideIcon }> = [
 
 type SlotState =
   | { status: "empty" }
+  | { status: "no-image"; room: RoomResponse }
   | { status: "uploading"; preview: string }
   | { status: "uploaded"; room: RoomResponse; preview: string }
   | { status: "error"; preview: string; message: string };
@@ -67,11 +70,22 @@ function RoomSlot({
       formData.append("image", file);
       formData.append("label", label);
 
-      const { data, error } = await apiClient.POST("/houses/{house_id}/rooms", {
-        params: { path: { house_id: houseId } },
-        body: { image: file as unknown as string, label },
-        bodySerializer: () => formData,
-      });
+      const existingRoomId =
+        state.status === "uploaded" || state.status === "no-image"
+          ? state.room.id
+          : null;
+
+      const { data, error } = existingRoomId
+        ? await apiClient.PUT("/houses/{house_id}/rooms/{room_id}", {
+            params: { path: { house_id: houseId, room_id: existingRoomId } },
+            body: { image: file as unknown as string, label },
+            bodySerializer: () => formData,
+          })
+        : await apiClient.POST("/houses/{house_id}/rooms", {
+            params: { path: { house_id: houseId } },
+            body: { image: file as unknown as string, label },
+            bodySerializer: () => formData,
+          });
 
       if (error || !data) {
         onStateChange({
@@ -85,7 +99,7 @@ function RoomSlot({
       onStateChange({ status: "uploaded", room: data, preview });
       onRoomAdded(data);
     },
-    [label, houseId, onStateChange, onRoomAdded]
+    [label, houseId, state, onStateChange, onRoomAdded]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,7 +154,12 @@ function RoomSlot({
 
       {/* Image / placeholder area */}
       <div className="relative aspect-video bg-base-200">
-        {hasImage && preview ? (
+        {state.status === "no-image" ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-warning">
+            <AlertTriangle size={36} strokeWidth={1.5} />
+            <span className="text-xs">No image uploaded</span>
+          </div>
+        ) : hasImage && preview ? (
           <>
             <img
               src={preview}
@@ -185,7 +204,7 @@ function RoomSlot({
         <span className="text-sm font-medium">{label}</span>
         {!isUploading && (
           <span className="text-xs text-base-content/40 flex items-center gap-1">
-            {state.status === "uploaded" ? (
+            {state.status === "uploaded" || state.status === "no-image" ? (
               <>
                 <RefreshCw size={11} />
                 Replace
@@ -203,12 +222,19 @@ function RoomSlot({
   );
 }
 
-export function RoomUploader({ houseId, onRoomAdded }: RoomUploaderProps) {
-  const [slotStates, setSlotStates] = useState<Record<string, SlotState>>(
-    Object.fromEntries(
+export function RoomUploader({ houseId, onRoomAdded, initialRooms = [] }: RoomUploaderProps) {
+  const [slotStates, setSlotStates] = useState<Record<string, SlotState>>(() => {
+    const states = Object.fromEntries(
       ROOM_TYPES.map(({ label }) => [label, { status: "empty" as const }])
-    )
-  );
+    );
+    for (const room of initialRooms) {
+      if (!(room.label in states)) continue;
+      states[room.label] = room.image_url
+        ? { status: "uploaded", room, preview: room.image_url }
+        : { status: "no-image", room };
+    }
+    return states;
+  });
 
   const handleStateChange = useCallback((label: string, state: SlotState) => {
     setSlotStates((prev) => ({ ...prev, [label]: state }));

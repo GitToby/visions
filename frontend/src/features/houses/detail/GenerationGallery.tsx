@@ -1,68 +1,71 @@
-import { useGenerations, useStyles } from "../../../lib/api/hooks";
+import { useGenerations } from "../../../lib/api/hooks";
 import type { components } from "../../../lib/api/schema";
 
-type JobStatus = components["schemas"]["JobStatus"];
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];
 
-interface GenerationGalleryProps {
-  houseId: string;
+type DerivedStatus = "pending" | "completed" | "failed";
+
+function deriveStatus(job: GenerationJobResponse): DerivedStatus {
+  if (job.error_message) return "failed";
+  if (job.completed_at) return "completed";
+  return "pending";
 }
 
-const STATUS_BADGE: Record<JobStatus, string> = {
-  pending: "badge-warning",
-  processing: "badge-info",
-  completed: "badge-success",
-  failed: "badge-error",
-};
+function JobCard({ job }: { job: GenerationJobResponse }) {
+  const status = deriveStatus(job);
 
-function JobCard({
-  job,
-  styleName,
-}: {
-  job: GenerationJobResponse;
-  styleName: string;
-}) {
   return (
-    <div className="card bg-base-100 card-border card-sm">
-      <div className="card-body">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-sm">{styleName}</h4>
-          <span className={`badge badge-sm ${STATUS_BADGE[job.status]}`}>
-            {job.status}
-          </span>
-        </div>
-        {job.status === "completed" && job.result_image_key && (
-          <p className="text-xs text-base-content/50 font-mono truncate">
-            {job.result_image_key}
-          </p>
+    <div className="card bg-base-100 card-border overflow-hidden">
+      {/* Image area */}
+      <div className="relative aspect-video bg-base-200">
+        {status === "pending" && (
+          <div className="w-full h-full skeleton rounded-none" />
         )}
-        {job.status === "failed" && job.error_message && (
-          <p className="text-xs text-error">{job.error_message}</p>
-        )}
-        {(job.status === "pending" || job.status === "processing") && (
-          <div className="flex items-center gap-2 text-xs text-base-content/50">
-            <span className="loading loading-spinner loading-xs" />
-            Generating…
+        {status === "completed" && (
+          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
+            <span className="text-4xl">✦</span>
+            <span className="text-xs">Ready</span>
           </div>
         )}
+        {status === "failed" && (
+          <div className="w-full h-full bg-error/10 flex items-center justify-center p-4">
+            <span className="text-error text-xs text-center">
+              {job.error_message}
+            </span>
+          </div>
+        )}
+
+        {/* Status badge */}
+        <div className="absolute top-2 right-2">
+          {status === "pending" && (
+            <span className="badge badge-sm badge-warning gap-1">
+              <span className="loading loading-dots loading-xs" />
+              Generating
+            </span>
+          )}
+          {status === "completed" && (
+            <span className="badge badge-sm badge-success">Done</span>
+          )}
+          {status === "failed" && (
+            <span className="badge badge-sm badge-error">Failed</span>
+          )}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 py-2">
+        <p className="text-sm font-medium truncate">{job.style}</p>
       </div>
     </div>
   );
 }
 
+interface GenerationGalleryProps {
+  houseId: string;
+}
+
 export function GenerationGallery({ houseId }: GenerationGalleryProps) {
   const { data: jobs, isLoading, error } = useGenerations(houseId);
-  const { data: styles } = useStyles();
-
-  const hasActive = jobs?.some(
-    (j) => j.status === "pending" || j.status === "processing"
-  );
-
-  // Re-render with polling when jobs are active — achieved by re-querying
-  // The parent can pass a key to force re-mount, or we can use a separate
-  // polling hook. For simplicity we rely on manual invalidation from the
-  // generate button and let the gallery show static results otherwise.
-  void hasActive;
 
   if (isLoading) {
     return (
@@ -88,29 +91,21 @@ export function GenerationGallery({ houseId }: GenerationGalleryProps) {
     );
   }
 
-  const styleMap = new Map(styles?.map((s) => [s.id, s.name]) ?? []);
-
   const byStyle = new Map<string, GenerationJobResponse[]>();
   for (const job of jobs) {
-    const group = byStyle.get(job.style_id) ?? [];
+    const group = byStyle.get(job.style) ?? [];
     group.push(job);
-    byStyle.set(job.style_id, group);
+    byStyle.set(job.style, group);
   }
 
   return (
-    <div className="space-y-6">
-      {[...byStyle.entries()].map(([styleId, styleJobs]) => (
-        <div key={styleId}>
-          <h3 className="font-semibold mb-3">
-            {styleMap.get(styleId) ?? styleId}
-          </h3>
+    <div className="space-y-8">
+      {[...byStyle.entries()].map(([style, styleJobs]) => (
+        <div key={style}>
+          <h3 className="font-semibold mb-3">{style}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {styleJobs.map((job) => (
-              <JobCard
-                key={job.id}
-                job={job}
-                styleName={styleMap.get(job.style_id) ?? job.style_id}
-              />
+              <JobCard key={job.id} job={job} />
             ))}
           </div>
         </div>

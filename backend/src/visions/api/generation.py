@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
 from visions.core.db import DBSession
 from visions.core.security import CurrentUser
-from visions.models import GenerationJob, GenerationJobCreate, GenerationJobResponse
+from visions.models import GenerationJob, GenerationJobCreate, GenerationJobResponse, Room
 from visions.services import generation as generation_service
 from visions.services import house as house_service
 
@@ -19,7 +19,18 @@ async def start_generation_for_room(
     payload: GenerationJobCreate,
 ) -> list[GenerationJobResponse]:
     """Submit and generate an AI generation request for a room in the house."""
-    ...
+    room = await db.get(Room, payload.room_id)
+    if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    await house_service.get_or_404(db, room.house_id, current_user.id)
+
+    job = GenerationJob(room_id=room.id, style=payload.style, submitter_id=current_user.id)
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+
+    background_tasks.add_task(generation_service.submit_job, db, job)
+    return [job.to_response()]
 
 
 @router.get("/houses/{house_id}", response_model=list[GenerationJobResponse])
@@ -28,6 +39,9 @@ async def list_jobs_for_house(
     db: DBSession,
     current_user: CurrentUser,
 ) -> list[GenerationJobResponse]:
+    """
+    See all generation jobs for a house.
+    """
     await house_service.get_or_404(db, house_id, current_user.id)
     jobs = await generation_service.get_jobs_for_house(db, house_id)
     return [j.to_response() for j in jobs]
@@ -39,6 +53,9 @@ async def get_job(
     current_user: CurrentUser,
     job_id: uuid.UUID,
 ) -> GenerationJobResponse:
+    """
+    Get the specific genertaion job, if it exists
+    """
     job = await db.get(GenerationJob, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")

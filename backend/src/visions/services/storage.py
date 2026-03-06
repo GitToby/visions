@@ -21,7 +21,7 @@ _s3 = boto3.client(
 )
 
 
-async def file_exists(*, bucket: str, key: str) -> bool:
+def file_exists(*, bucket: str, key: str) -> bool:
     """Checks if a key exists in the bucket."""
     try:
         _s3.head_object(Bucket=bucket, Key=key)
@@ -32,7 +32,7 @@ async def file_exists(*, bucket: str, key: str) -> bool:
         raise
 
 
-async def upload_file(file: UploadFile, *, bucket: str, key: str):
+def upload_file(file: UploadFile, *, bucket: str, key: str):
     """Uploads a file to S3."""
     size_kb = (file.size or 0) / 1024
     # todo, check if image by known codecs - then alter the image to be of a standard size
@@ -40,11 +40,12 @@ async def upload_file(file: UploadFile, *, bucket: str, key: str):
     try:
         _s3.upload_fileobj(file.file, bucket, key)
     except ClientError as exc:
+        logger.error("Failed to upload file | exc={}", exc)
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
 
 
 @ttl_cache(ttl=SIGNED_URL_EXPIRES - 10)
-async def s3_presigned_url(*, bucket: str, key: str):
+def s3_presigned_url(*, bucket: str, key: str):
     """Generate a presigned URL for an S3 object."""
     logger.debug(f"Generating presigned URL | {bucket}/{key}")
     try:
@@ -62,11 +63,12 @@ async def s3_presigned_url(*, bucket: str, key: str):
     return url
 
 
-def download_image(key: str) -> bytes:
+def download_file(*, bucket: str, key: str) -> bytes:
     """Download a stored object and return its bytes."""
+    # todo, make a generator response for downstream conuming
     logger.debug("Downloading image | key={}", key)
     try:
-        response = _s3.get_object(Bucket=SETTINGS.s3_bucket__rooms, Key=key)
+        response = _s3.get_object(Bucket=bucket, Key=key)
         data: bytes = response["Body"].read()
     except ClientError as exc:
         logger.error("Image download failed | key={} error={}", key, exc)

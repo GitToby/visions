@@ -1,9 +1,12 @@
+from PIL import Image
+import asyncio
 import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from typing import override
 
 from fastapi import UploadFile
+from fastapi.param_functions import File
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import TIMESTAMP, UniqueConstraint, text
 from sqlalchemy.event import listens_for
@@ -61,23 +64,48 @@ class FileStoreMixin(ABC):
 
     @property
     @abstractmethod
-    def image_key(self) -> str:
-        """The key used to store the image in S3"""
+    def _image_key_prefix(self) -> str:
+        """
+        The key used to store the image in S3
+
+        The result is of the post proccessed image file.
+        """
         ...
+
+    @property
+    def image_key_prefix(self) -> str:
+        """
+        The key used to store the image in S3
+
+        The result should be of the post proccessed image file.
+        """
+        return f"{self._image_key_prefix}.webp"
 
     async def has_image(self) -> bool:
         """Check if the room has an image"""
-        return await storage.file_exists(bucket=self.__bucket__, key=self.image_key)
+        return storage.file_exists(bucket=self.__bucket__, key=self.image_key_prefix)
 
     async def get_image_url(self) -> str | None:
         """Returns a presigned URL for the image"""
-        if await self.has_image():
-            return await storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
+        if storage.file_exists(bucket=self.__bucket__, key=self.image_key_prefix):
+            return storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key_prefix)
         return None
 
     async def upload_image(self, image: UploadFile) -> None:
         """Upload the image to S3"""
-        await storage.upload_file(image, bucket=self.__bucket__, key=self.image_key)
+        # todo, take image, convert to .webp using pillow before upload
+        _image = UploadFile(file=image.file, filename=self.image_key_prefix)
+        
+        with Image.open(image.file) as img:
+            _image.file = img.tobytes()
+            storage.upload_file(_image, bucket=self.__bucket__, key=self.image_key_prefix)
+
+    async def download_image(self, add_watermark: bool = False) -> bytes | None:
+        """Returns the image file bytes to be used with a FileResponse"""
+        try:
+            return storage.download_file(bucket=self.__bucket__, key=self.image_key_prefix)
+        except Exception:
+            return None
 
 
 # ─── User ─────────────────────────────────────────────────────────────────────
@@ -146,15 +174,13 @@ class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
     rooms: list[Room] = Relationship(back_populates="house")
 
     async def to_response(self) -> HouseResponse:
-        room_count = len(self.rooms)
         return HouseResponse(
             id=self.id,
             name=self.name,
             owner_id=self.owner_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
-            room_count=room_count,
-            rooms=[await room.to_response() for room in self.rooms],
+            rooms=await asyncio.gather(*[room.to_response() for room in self.rooms]),
         )
 
 
@@ -166,7 +192,6 @@ class HouseResponse(BaseModel):
     owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None
-    room_count: int
     rooms: list[RoomResponse]
 
 
@@ -183,7 +208,14 @@ class RoomBase(SQLModel):
     """What is the name of the room, should be unique in the house"""
 
 
-class RoomCreate(RoomBase):
+class RoomUpdate(RoomBase):
+    """Data needed to update a room"""
+
+    image: UploadFile
+    """The image of the room"""
+
+
+class RoomCreate(RoomUpdate):
     """Data needed to create a room"""
 
     house_id: uuid.UUID
@@ -210,13 +242,14 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     @property
     @override
     def image_key(self):
-        return f"{self.id}/{self.label}"
+        return f"rooms/{self.id}/{self.label}"
 
     house: House = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="room")
 
     async def to_response(self) -> RoomResponse:
         return RoomResponse(
+            id=self.id,
             house_id=self.house_id,
             label=self.label,
             image_url=await self.get_image_url(),
@@ -230,6 +263,7 @@ class RoomResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    id: uuid.UUID
     house_id: uuid.UUID
     label: str
     image_url: str | None

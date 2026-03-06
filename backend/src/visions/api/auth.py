@@ -15,7 +15,7 @@ class LoginResponse(BaseModel):
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> UserResponse:
-    return UserResponse.model_validate(current_user)
+    return current_user.to_response()
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

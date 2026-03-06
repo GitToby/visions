@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { GenerationGallery } from "../features/houses/detail/GenerationGallery";
@@ -18,6 +18,10 @@ export function HouseDetailPage() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (house?.rooms) setRooms(house.rooms);
+  }, [house?.rooms]);
 
   const handleRoomAdded = (room: RoomResponse) => {
     setRooms((prev) => [...prev.filter((r) => r.label !== room.label), room]);
@@ -88,7 +92,7 @@ export function HouseDetailPage() {
         {/* Rooms */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Rooms</h2>
-          <RoomUploader houseId={house.id} onRoomAdded={handleRoomAdded} />
+          <RoomUploader houseId={house.id} onRoomAdded={handleRoomAdded} initialRooms={house.rooms} />
         </section>
 
         {/* Styles */}

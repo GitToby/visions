@@ -44,7 +44,10 @@ async def create_jobs(
 
 
 async def submit_job(db: AsyncSession, job: GenerationJob):
-    img_url = await job.room.get_image_url()
+    room = await db.get(Room, job.room_id)
+    if room is None:
+        raise ValueError(f"Room {job.room_id} not found")
+    img_url = await room.get_image_url()
     if not img_url:
         raise ValueError(f"Room {job.room_id} has no image URL")
         # fail gen job and return None
