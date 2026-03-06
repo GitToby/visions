@@ -1,12 +1,12 @@
-from PIL import Image
 import asyncio
 import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
+from io import BytesIO
 from typing import override
 
 from fastapi import UploadFile
-from fastapi.param_functions import File
+from PIL import Image
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import TIMESTAMP, UniqueConstraint, text
 from sqlalchemy.event import listens_for
@@ -73,7 +73,7 @@ class FileStoreMixin(ABC):
         ...
 
     @property
-    def image_key_prefix(self) -> str:
+    def image_key(self) -> str:
         """
         The key used to store the image in S3
 
@@ -83,27 +83,27 @@ class FileStoreMixin(ABC):
 
     async def has_image(self) -> bool:
         """Check if the room has an image"""
-        return storage.file_exists(bucket=self.__bucket__, key=self.image_key_prefix)
+        return storage.file_exists(bucket=self.__bucket__, key=self.image_key)
 
     async def get_image_url(self) -> str | None:
         """Returns a presigned URL for the image"""
-        if storage.file_exists(bucket=self.__bucket__, key=self.image_key_prefix):
-            return storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key_prefix)
+        if storage.file_exists(bucket=self.__bucket__, key=self.image_key):
+            return storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
         return None
 
     async def upload_image(self, image: UploadFile) -> None:
         """Upload the image to S3"""
         # todo, take image, convert to .webp using pillow before upload
-        _image = UploadFile(file=image.file, filename=self.image_key_prefix)
-        
+
         with Image.open(image.file) as img:
-            _image.file = img.tobytes()
-            storage.upload_file(_image, bucket=self.__bucket__, key=self.image_key_prefix)
+            _bytes = BytesIO(img.tobytes())
+            _image = UploadFile(file=_bytes, filename=self.image_key)
+            storage.upload_file(_image, bucket=self.__bucket__, key=self.image_key)
 
     async def download_image(self, add_watermark: bool = False) -> bytes | None:
         """Returns the image file bytes to be used with a FileResponse"""
         try:
-            return storage.download_file(bucket=self.__bucket__, key=self.image_key_prefix)
+            return storage.download_file(bucket=self.__bucket__, key=self.image_key)
         except Exception:
             return None
 
@@ -241,7 +241,7 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
 
     @property
     @override
-    def image_key(self):
+    def _image_key_prefix(self):
         return f"rooms/{self.id}/{self.label}"
 
     house: House = Relationship(back_populates="rooms")
@@ -297,7 +297,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
 
     @property
     @override
-    def image_key(self):
+    def _image_key_prefix(self):
         return f"generation-jobs/{self.room_id}/{self.style}"
 
     room: Room = Relationship(back_populates="generation_jobs")

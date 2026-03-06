@@ -54,4 +54,4 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash-image"
 
 
-settings = Settings()
+SETTINGS = Settings()  # pyright: ignore[reportCallIssue]

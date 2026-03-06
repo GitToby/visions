@@ -92,9 +92,10 @@ async def get_room(
     )
     return await room.to_response()
 
+
 # question, what if theyre not pngs
 @router.get("/{house_id}/rooms/{room_id}.png", response_model=RoomResponse)
-async def get_room_image():
+async def get_room_image(): ...
 
 
 @router.put("/{house_id}/rooms/{room_id}", response_model=RoomResponse)

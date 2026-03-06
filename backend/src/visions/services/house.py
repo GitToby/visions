@@ -1,7 +1,6 @@
 import uuid
 
 from fastapi import HTTPException, status
-from fastapi.datastructures import UploadFile
 from loguru import logger
 from sqlalchemy.orm import selectinload
 from sqlmodel import func, select

@@ -52,6 +52,7 @@ app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 async def health() -> dict:
     return {"status": "ok"}
 
+
 if __name__ == "__main__":
     import uvicorn
 

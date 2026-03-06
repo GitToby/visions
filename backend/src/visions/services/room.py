@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import HTTPException, UploadFile, status
+from fastapi import HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -19,8 +19,10 @@ async def get(
     return result.one_or_none()
 
 
-async def get_or_404(db: AsyncSession, *, house_id: uuid.UUID, room_id: uuid.UUID,caller: User | None = None) -> Room:
-    room = await get(db, house_id=house_id, room_id=room_id,caller=caller)
+async def get_or_404(
+    db: AsyncSession, *, house_id: uuid.UUID, room_id: uuid.UUID, caller: User | None = None
+) -> Room:
+    room = await get(db, house_id=house_id, room_id=room_id, caller=caller)
     if room is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     return room
