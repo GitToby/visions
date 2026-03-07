@@ -31,13 +31,13 @@ export function HouseDetailPage() {
     if (!houseId || rooms.length === 0 || selectedStyleIds.length === 0) return;
     setGenerating(true);
     setGenerateError(null);
-    const { error: apiError } = await apiClient.POST("/generation", {
-      body: {
-        house_id: houseId,
-        room_ids: rooms.map((r) => r.id),
-        style_ids: selectedStyleIds,
-      },
-    });
+    const jobs = rooms.flatMap((r) =>
+      selectedStyleIds.map((style) => ({ room_id: r.id, style }))
+    );
+    const results = await Promise.all(
+      jobs.map((body) => apiClient.POST("/generation", { body }))
+    );
+    const apiError = results.find((r) => r.error)?.error ?? null;
     setGenerating(false);
     if (apiError) {
       setGenerateError("Generation failed. Please try again.");
@@ -92,7 +92,11 @@ export function HouseDetailPage() {
         {/* Rooms */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Rooms</h2>
-          <RoomUploader houseId={house.id} onRoomAdded={handleRoomAdded} initialRooms={house.rooms} />
+          <RoomUploader
+            houseId={house.id}
+            onRoomAdded={handleRoomAdded}
+            initialRooms={house.rooms}
+          />
         </section>
 
         {/* Styles */}

@@ -222,19 +222,25 @@ function RoomSlot({
   );
 }
 
-export function RoomUploader({ houseId, onRoomAdded, initialRooms = [] }: RoomUploaderProps) {
-  const [slotStates, setSlotStates] = useState<Record<string, SlotState>>(() => {
-    const states = Object.fromEntries(
-      ROOM_TYPES.map(({ label }) => [label, { status: "empty" as const }])
-    );
-    for (const room of initialRooms) {
-      if (!(room.label in states)) continue;
-      states[room.label] = room.image_url
-        ? { status: "uploaded", room, preview: room.image_url }
-        : { status: "no-image", room };
+export function RoomUploader({
+  houseId,
+  onRoomAdded,
+  initialRooms = [],
+}: RoomUploaderProps) {
+  const [slotStates, setSlotStates] = useState<Record<string, SlotState>>(
+    () => {
+      const states: Record<string, SlotState> = Object.fromEntries(
+        ROOM_TYPES.map(({ label }) => [label, { status: "empty" as const }])
+      );
+      for (const room of initialRooms) {
+        if (!(room.label in states)) continue;
+        states[room.label] = room.image_url
+          ? { status: "uploaded", room, preview: room.image_url }
+          : { status: "no-image", room };
+      }
+      return states;
     }
-    return states;
-  });
+  );
 
   const handleStateChange = useCallback((label: string, state: SlotState) => {
     setSlotStates((prev) => ({ ...prev, [label]: state }));

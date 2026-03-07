@@ -39,27 +39,17 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {styles.map((style) => {
-        const selected = selectedIds.includes(style.id);
+        const selected = selectedIds.includes(style.name);
         return (
           <button
-            key={style.id}
+            key={style.name}
             type="button"
-            onClick={() => toggle(style.id)}
+            onClick={() => toggle(style.name)}
             className={`card bg-base-100 card-border text-left transition-all cursor-pointer hover:shadow-md ${
               selected ? "ring-2 ring-primary border-primary" : ""
             }`}
           >
-            {style.preview_image_url ? (
-              <figure className="overflow-hidden rounded-t-box">
-                <img
-                  src={style.preview_image_url}
-                  alt={style.name}
-                  className="w-full h-48 object-cover"
-                />
-              </figure>
-            ) : (
-              <div className="w-full h-48 bg-base-200 rounded-t-box" />
-            )}
+            <div className="w-full h-48 bg-base-200 rounded-t-box" />
             <div className="card-body card-sm">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{style.name}</h3>

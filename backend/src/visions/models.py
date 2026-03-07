@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import override
 
 from fastapi import UploadFile
+from fastapi.datastructures import Headers
 from PIL import Image
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import TIMESTAMP, UniqueConstraint, text
@@ -68,7 +69,7 @@ class FileStoreMixin(ABC):
         """
         The key used to store the image in S3
 
-        The result is of the post proccessed image file.
+        The result is of the post processed image file.
         """
         ...
 
@@ -93,11 +94,18 @@ class FileStoreMixin(ABC):
 
     async def upload_image(self, image: UploadFile) -> None:
         """Upload the image to S3"""
-        # todo, take image, convert to .webp using pillow before upload
-
+        
         with Image.open(image.file) as img:
-            _bytes = BytesIO(img.tobytes())
-            _image = UploadFile(file=_bytes, filename=self.image_key)
+            _bytes = BytesIO()
+            img.save(_bytes, format="WebP")
+            size = _bytes.tell()
+            _bytes.seek(0)
+            _image = UploadFile(
+                file=_bytes,
+                filename=self.image_key,
+                headers=Headers({"Content-Type": "image/webp"}),
+                size=size,
+            )
             storage.upload_file(_image, bucket=self.__bucket__, key=self.image_key)
 
     async def download_image(self, add_watermark: bool = False) -> bytes | None:
@@ -242,7 +250,7 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     @property
     @override
     def _image_key_prefix(self):
-        return f"rooms/{self.id}/{self.label}"
+        return f"rooms/{self.id}"
 
     house: House = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="room")

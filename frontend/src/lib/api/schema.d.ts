@@ -102,12 +102,30 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get Room */
+        get: operations["get_room_houses__house_id__rooms__room_id__get"];
         /** Update Room */
         put: operations["update_room_houses__house_id__rooms__room_id__put"];
         post?: never;
         /** Delete Room */
         delete: operations["delete_room_houses__house_id__rooms__room_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/houses/{house_id}/rooms/{room_id}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Room Image */
+        get: operations["get_room_image_houses__house_id__rooms__room_id__png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -302,8 +320,6 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-            /** Room Count */
-            room_count: number;
             /** Rooms */
             rooms: components["schemas"]["RoomResponse"][];
         };
@@ -603,6 +619,38 @@ export interface operations {
             };
         };
     };
+    get_room_houses__house_id__rooms__room_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                house_id: string;
+                room_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_room_houses__house_id__rooms__room_id__put: {
         parameters: {
             query?: {
@@ -667,6 +715,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_room_image_houses__house_id__rooms__room_id__png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomResponse"];
                 };
             };
         };

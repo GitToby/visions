@@ -1,8 +1,8 @@
 """S3-compatible file service"""
 
 import boto3
+import httpx
 from botocore.exceptions import ClientError
-from cachetools.func import ttl_cache
 from fastapi import HTTPException, status
 from fastapi.datastructures import UploadFile
 from loguru import logger
@@ -38,20 +38,21 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
     # todo, check if image by known codecs - then alter the image to be of a standard size
     logger.debug(f"Uploading generated image | {bucket}/{key} {size_kb=:.1f}KB")
     try:
-        _s3.upload_fileobj(file.file, bucket, key)
+        _s3.upload_fileobj(
+            file.file, bucket, key, ExtraArgs={"ContentType": file.headers.get("Content-Type")}
+        )
     except ClientError as exc:
         logger.error("Failed to upload file | exc={}", exc)
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
 
 
-@ttl_cache(ttl=SIGNED_URL_EXPIRES - 10)
 def s3_presigned_url(*, bucket: str, key: str):
     """Generate a presigned URL for an S3 object."""
     logger.debug(f"Generating presigned URL | {bucket}/{key}")
     try:
         url = _s3.generate_presigned_url(
             "get_object",
-            Params={"Bucket": SETTINGS.s3_bucket__rooms, "Key": key},
+            Params={"Bucket": bucket, "Key": key},
             ExpiresIn=SIGNED_URL_EXPIRES,
         )
     except ClientError as exc:

@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # S3-compatible storage (Supabase Storage S3 endpoint)
     # Generate these from: Supabase Dashboard > Project Settings > Storage > S3 Access Keys
-    s3_access_key_id: str
+    s3_access_key_id: str = "205bf89a6c954f326a2b15e2bf09cd0b"
     s3_secret_access_key: SecretStr
     s3_region: str = "eu-west-1"
     s3_bucket__rooms: str = "visions-rooms"

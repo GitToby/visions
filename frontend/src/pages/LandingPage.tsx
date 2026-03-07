@@ -74,9 +74,7 @@ export function LandingPage() {
       {/* How it works */}
       <section className="bg-base-200 py-16 px-6">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-10">
-            How it works
-          </h2>
+          <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="badge badge-primary badge-lg mb-3">1</div>

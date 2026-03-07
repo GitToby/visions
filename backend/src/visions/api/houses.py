@@ -3,6 +3,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Body, File, Form, UploadFile, status
+from starlette.responses import FileResponse, StreamingResponse
 
 from visions.core.db import DBSession
 from visions.core.security import CurrentUser
@@ -94,9 +95,14 @@ async def get_room(
 
 
 # question, what if theyre not pngs
-@router.get("/{house_id}/rooms/{room_id}.png", response_model=RoomResponse)
-async def get_room_image(): ...
-
+# @router.get("/{house_id}/rooms/{room_id}.webp", response_model=StreamingResponse)
+# async def get_room_image(
+#     db: DBSession,
+#     current_user: CurrentUser,
+#     house_id: uuid.UUID,
+#     room_id: uuid.UUID,
+# ) -> StreamingResponse:
+#     ...
 
 @router.put("/{house_id}/rooms/{room_id}", response_model=RoomResponse)
 async def update_room(

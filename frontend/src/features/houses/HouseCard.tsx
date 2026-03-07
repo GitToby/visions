@@ -51,8 +51,7 @@ export function HouseCard({ house }: HouseCardProps) {
         <div className="card-body card-sm py-3">
           <h2 className="card-title text-base">{house.name}</h2>
           <span className="badge badge-neutral badge-sm">
-            {house.room_count ?? 0}{" "}
-            {(house.room_count ?? 0) === 1 ? "room" : "rooms"}
+            {house.rooms.length} {house.rooms.length === 1 ? "room" : "rooms"}
           </span>
         </div>
       </div>
