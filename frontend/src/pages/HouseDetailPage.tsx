@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Pencil } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { GenerationGallery } from "../features/houses/detail/GenerationGallery";
@@ -17,11 +18,49 @@ export function HouseDetailPage() {
   const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (house?.rooms) setRooms(house.rooms);
   }, [house?.rooms]);
+
+  const startEditName = () => {
+    setEditName(house?.name ?? "");
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  };
+
+  const cancelEditName = () => {
+    setEditingName(false);
+    setEditName("");
+  };
+
+  const saveEditName = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || !houseId || trimmed === house?.name) {
+      cancelEditName();
+      return;
+    }
+    setSavingName(true);
+    await apiClient.PUT("/houses/{house_id}", {
+      params: { path: { house_id: houseId } },
+      body: { name: trimmed },
+    });
+    setSavingName(false);
+    setEditingName(false);
+    await queryClient.invalidateQueries({
+      queryKey: ["get", "/houses/{house_id}", houseId],
+    });
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") void saveEditName();
+    if (e.key === "Escape") cancelEditName();
+  };
 
   const handleRoomAdded = (room: RoomResponse) => {
     setRooms((prev) => [...prev.filter((r) => r.label !== room.label), room]);
@@ -88,7 +127,36 @@ export function HouseDetailPage() {
               <li>{house.name}</li>
             </ul>
           </div>
-          <h1 className="text-2xl font-bold">{house.name}</h1>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                ref={nameInputRef}
+                type="text"
+                className="input input-ghost text-2xl font-bold px-1 h-auto py-0 focus:outline-none w-full max-w-sm"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={handleNameKeyDown}
+                onBlur={() => void saveEditName()}
+                disabled={savingName}
+                maxLength={100}
+              />
+              {savingName && (
+                <span className="loading loading-spinner loading-sm text-base-content/40" />
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group/title">
+              <h1 className="text-2xl font-bold">{house.name}</h1>
+              <button
+                type="button"
+                onClick={startEditName}
+                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/title:opacity-100 transition-opacity"
+                title="Rename project"
+              >
+                <Pencil size={13} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Rooms */}

@@ -70,6 +70,7 @@ function RoomSlot({
 }: RoomSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = useCallback(
     async (e: React.MouseEvent) => {
@@ -79,9 +80,11 @@ function RoomSlot({
           ? state.room.id
           : null;
       if (!roomId) return;
+      setIsDeleting(true);
       await apiClient.DELETE("/houses/{house_id}/rooms/{room_id}", {
         params: { path: { house_id: houseId, room_id: roomId } },
       });
+      setIsDeleting(false);
       onStateChange({ status: "empty" });
       onDelete?.(label);
     },
@@ -148,10 +151,11 @@ function RoomSlot({
   };
 
   const openPicker = () => {
-    if (state.status !== "uploading") inputRef.current?.click();
+    if (!isBusy) inputRef.current?.click();
   };
 
   const isUploading = state.status === "uploading";
+  const isBusy = isUploading || isDeleting;
   const hasImage =
     state.status === "uploading" ||
     state.status === "uploaded" ||
@@ -173,7 +177,7 @@ function RoomSlot({
       <button
         type="button"
         className={`card card-border bg-base-100 overflow-hidden select-none transition-all text-left w-full ${
-          isUploading
+          isBusy
             ? "cursor-wait"
             : "cursor-pointer hover:shadow-md hover:border-primary/40"
         } ${isDragOver ? "border-primary ring-2 ring-primary/30" : ""}`}
@@ -240,18 +244,18 @@ function RoomSlot({
         {/* Footer */}
         <div className="px-3 py-2 flex items-center justify-between min-h-9">
           <span className="text-sm font-medium">{label}</span>
-          {!isUploading && (
+          {!isBusy && (
             <span className="text-xs text-base-content/40 flex items-center gap-2">
               {state.status === "uploaded" || state.status === "no-image" ? (
                 <>
-                  <button type="button" className="flex items-center gap-1">
+                  <button type="button" className="btn btn-xs btn-ghost">
                     <RefreshCw size={11} />
                     Replace
                   </button>
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="flex items-center gap-1 hover:text-error transition-colors"
+                    className="btn btn-xs btn-ghost hover:text-error"
                     title="Delete room"
                   >
                     <Trash2 size={11} />
@@ -264,6 +268,9 @@ function RoomSlot({
                 </>
               )}
             </span>
+          )}
+          {isDeleting && (
+            <span className="loading loading-spinner loading-xs text-base-content/40" />
           )}
         </div>
       </button>
@@ -416,7 +423,7 @@ export function RoomUploader({
   return (
     <div className="relative">
       {toast && (
-        <div className="toast toast-center z-50 pointer-events-none">
+        <div className="toast toast-end z-50 pointer-events-none">
           <div className="alert alert-success text-sm gap-2 py-2">
             <CheckCircle size={14} />
             <span>{toast}</span>
