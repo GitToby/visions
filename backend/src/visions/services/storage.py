@@ -51,7 +51,7 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
 def s3_presigned_url(*, bucket: str, key: str):
     """
     Generate a signed URL via the Supabase Storage SDK.
-    
+
     supabase dosent like the s3 presigned format so wew have to use the client.
     """
     logger.debug(f"Generating presigned URL | {bucket}/{key}")
@@ -83,3 +83,15 @@ def download_file(*, bucket: str, key: str) -> bytes:
     return data
 
 
+def delete_file(*, bucket: str, key: str):
+    """Delete a stored object."""
+    logger.debug("Deleting image | key={}", key)
+    try:
+        _s3.delete_object(Bucket=bucket, Key=key)
+    except ClientError as exc:
+        logger.error("Image deletion failed | key={} error={}", key, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Image deletion failed",
+        ) from exc
+    logger.debug("Image deleted | key={}", key)

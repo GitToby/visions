@@ -46,5 +46,6 @@ async def update(db: AsyncSession, *, room: Room, room_update: RoomUpdate) -> Ro
 
 
 async def delete(db: AsyncSession, *, room: Room) -> None:
+    await room.delete_image()
     await db.delete(room)
     await db.commit()

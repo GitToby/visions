@@ -114,6 +114,13 @@ class FileStoreMixin(ABC):
             return storage.download_file(bucket=self.__bucket__, key=self.image_key)
         except Exception:
             return None
+            
+    async def delete_image(self):
+        """Deletes the image from the file store."""
+        try:
+            storage.delete_file(bucket=self.__bucket__, key=self.image_key)
+        except Exception:
+            pass
 
 
 # ─── User ─────────────────────────────────────────────────────────────────────
