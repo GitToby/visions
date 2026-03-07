@@ -3,17 +3,17 @@ import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
-import { GenerationGallery } from "../features/houses/detail/GenerationGallery";
-import { RoomUploader } from "../features/houses/detail/RoomUploader";
+import { GenerationGallery } from "../features/properties/detail/GenerationGallery";
+import { RoomUploader } from "../features/properties/detail/RoomUploader";
 import { StylePicker } from "../features/styles/StylePicker";
-import { apiClient, useHouse } from "../lib/api/hooks";
+import { apiClient, useProperty } from "../lib/api/hooks";
 import type { components } from "../lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 
-export function HouseDetailPage() {
-  const { houseId } = useParams<{ houseId: string }>();
-  const { data: house, isLoading, error } = useHouse(houseId ?? "");
+export function PropertyDetailPage() {
+  const { propertyId } = useParams<{ propertyId: string }>();
+  const { data: property, isLoading, error } = useProperty(propertyId ?? "");
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
   const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -25,11 +25,11 @@ export function HouseDetailPage() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (house?.rooms) setRooms(house.rooms);
-  }, [house?.rooms]);
+    if (property?.rooms) setRooms(property.rooms);
+  }, [property?.rooms]);
 
   const startEditName = () => {
-    setEditName(house?.name ?? "");
+    setEditName(property?.name ?? "");
     setEditingName(true);
     setTimeout(() => nameInputRef.current?.select(), 0);
   };
@@ -41,19 +41,19 @@ export function HouseDetailPage() {
 
   const saveEditName = async () => {
     const trimmed = editName.trim();
-    if (!trimmed || !houseId || trimmed === house?.name) {
+    if (!trimmed || !propertyId || trimmed === property?.name) {
       cancelEditName();
       return;
     }
     setSavingName(true);
-    await apiClient.PUT("/houses/{house_id}", {
-      params: { path: { house_id: houseId } },
+    await apiClient.PUT("/houses/{property_id}", {
+      params: { path: { property_id: propertyId } },
       body: { name: trimmed },
     });
     setSavingName(false);
     setEditingName(false);
     await queryClient.invalidateQueries({
-      queryKey: ["get", "/houses/{house_id}", houseId],
+      queryKey: ["get", "/houses/{property_id}", propertyId],
     });
   };
 
@@ -67,7 +67,7 @@ export function HouseDetailPage() {
   };
 
   const handleGenerate = async () => {
-    if (!houseId || rooms.length === 0 || selectedStyleIds.length === 0) return;
+    if (!propertyId || rooms.length === 0 || selectedStyleIds.length === 0) return;
     setGenerating(true);
     setGenerateError(null);
     const jobs = rooms.flatMap((r) =>
@@ -83,7 +83,7 @@ export function HouseDetailPage() {
       return;
     }
     await queryClient.invalidateQueries({
-      queryKey: ["get", "/generation/houses/{house_id}", houseId],
+      queryKey: ["get", "/generation/houses/{property_id}", propertyId],
     });
   };
 
@@ -98,7 +98,7 @@ export function HouseDetailPage() {
     );
   }
 
-  if (error || !house) {
+  if (error || !property) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -122,9 +122,9 @@ export function HouseDetailPage() {
           <div className="breadcrumbs text-sm mb-1">
             <ul>
               <li>
-                <Link to="/houses">My Projects</Link>
+                <Link to="/properties">My Projects</Link>
               </li>
-              <li>{house.name}</li>
+              <li>{property.name}</li>
             </ul>
           </div>
           {editingName ? (
@@ -146,7 +146,7 @@ export function HouseDetailPage() {
             </div>
           ) : (
             <div className="flex items-center gap-2 group/title">
-              <h1 className="text-2xl font-bold">{house.name}</h1>
+              <h1 className="text-2xl font-bold">{property.name}</h1>
               <button
                 type="button"
                 onClick={startEditName}
@@ -163,9 +163,9 @@ export function HouseDetailPage() {
         <section>
           <h2 className="text-lg font-semibold mb-4">Rooms</h2>
           <RoomUploader
-            houseId={house.id}
+            propertyId={property.id}
             onRoomAdded={handleRoomAdded}
-            initialRooms={house.rooms}
+            initialRooms={property.rooms}
           />
         </section>
 
@@ -211,7 +211,7 @@ export function HouseDetailPage() {
         {/* Gallery */}
         <section>
           <h2 className="text-lg font-semibold mb-4">Generated designs</h2>
-          <GenerationGallery houseId={house.id} />
+          <GenerationGallery propertyId={property.id} />
         </section>
       </main>
     </div>

@@ -23,7 +23,7 @@ import type { components } from "../../../lib/api/schema";
 type RoomResponse = components["schemas"]["RoomResponse"];
 
 interface RoomUploaderProps {
-  houseId: string;
+  propertyId: string;
   onRoomAdded: (room: RoomResponse) => void;
   initialRooms?: RoomResponse[];
 }
@@ -50,7 +50,7 @@ type SlotState =
 interface RoomSlotProps {
   label: string;
   Icon: LucideIcon;
-  houseId: string;
+  propertyId: string;
   state: SlotState;
   onStateChange: (state: SlotState) => void;
   onRoomAdded: (room: RoomResponse) => void;
@@ -61,7 +61,7 @@ interface RoomSlotProps {
 function RoomSlot({
   label,
   Icon,
-  houseId,
+  propertyId,
   state,
   onStateChange,
   onRoomAdded,
@@ -81,14 +81,14 @@ function RoomSlot({
           : null;
       if (!roomId) return;
       setIsDeleting(true);
-      await apiClient.DELETE("/houses/{house_id}/rooms/{room_id}", {
-        params: { path: { house_id: houseId, room_id: roomId } },
+      await apiClient.DELETE("/houses/{property_id}/rooms/{room_id}", {
+        params: { path: { property_id: propertyId, room_id: roomId } },
       });
       setIsDeleting(false);
       onStateChange({ status: "empty" });
       onDelete?.(label);
     },
-    [state, houseId, label, onStateChange, onDelete],
+    [state, propertyId, label, onStateChange, onDelete],
   );
 
   const handleFile = useCallback(
@@ -106,13 +106,13 @@ function RoomSlot({
           : null;
 
       const { data, error } = existingRoomId
-        ? await apiClient.PUT("/houses/{house_id}/rooms/{room_id}", {
-            params: { path: { house_id: houseId, room_id: existingRoomId } },
+        ? await apiClient.PUT("/houses/{property_id}/rooms/{room_id}", {
+            params: { path: { property_id: propertyId, room_id: existingRoomId } },
             body: { image: file as unknown as string, label },
             bodySerializer: () => formData,
           })
-        : await apiClient.POST("/houses/{house_id}/rooms", {
-            params: { path: { house_id: houseId } },
+        : await apiClient.POST("/houses/{property_id}/rooms", {
+            params: { path: { property_id: propertyId } },
             body: { image: file as unknown as string, label },
             bodySerializer: () => formData,
           });
@@ -129,7 +129,7 @@ function RoomSlot({
       onStateChange({ status: "uploaded", room: data, preview });
       onRoomAdded(data);
     },
-    [label, houseId, state, onStateChange, onRoomAdded],
+    [label, propertyId, state, onStateChange, onRoomAdded],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +358,7 @@ function AddRoomCard({ onAdd }: { onAdd: (label: string) => void }) {
 }
 
 export function RoomUploader({
-  houseId,
+  propertyId,
   onRoomAdded,
   initialRooms = [],
 }: RoomUploaderProps) {
@@ -436,7 +436,7 @@ export function RoomUploader({
             key={label}
             label={label}
             Icon={Icon}
-            houseId={houseId}
+            propertyId={propertyId}
             state={slotStates[label]}
             onStateChange={(s) => handleStateChange(label, s)}
             onRoomAdded={onRoomAdded}
@@ -448,7 +448,7 @@ export function RoomUploader({
             key={label}
             label={label}
             Icon={Home}
-            houseId={houseId}
+            propertyId={propertyId}
             state={slotStates[label]}
             onStateChange={(s) => handleStateChange(label, s)}
             onRoomAdded={onRoomAdded}

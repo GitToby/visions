@@ -61,11 +61,11 @@ function JobCard({ job }: { job: GenerationJobResponse }) {
 }
 
 interface GenerationGalleryProps {
-  houseId: string;
+  propertyId: string;
 }
 
-export function GenerationGallery({ houseId }: GenerationGalleryProps) {
-  const { data: jobs, isLoading, error } = useGenerations(houseId);
+export function GenerationGallery({ propertyId }: GenerationGalleryProps) {
+  const { data: jobs, isLoading, error } = useGenerations(propertyId);
 
   if (isLoading) {
     return (

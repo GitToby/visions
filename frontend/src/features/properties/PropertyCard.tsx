@@ -1,33 +1,33 @@
 import { Link } from "react-router-dom";
 import type { components } from "../../lib/api/schema";
 
-type HouseResponse = components["schemas"]["HouseResponse"];
+type PropertyResponse = components["schemas"]["HouseResponse"];
 
-interface HouseCardProps {
-  house: HouseResponse;
+interface PropertyCardProps {
+  property: PropertyResponse;
 }
 
-export function HouseCard({ house }: HouseCardProps) {
-  const images = house.rooms
+export function PropertyCard({ property }: PropertyCardProps) {
+  const images = property.rooms
     .map((r) => r.image_url)
     .filter((url): url is string => !!url)
     .slice(0, 4);
 
   return (
-    <Link to={`/houses/${house.id}`} className="block group">
+    <Link to={`/properties/${property.id}`} className="block group">
       <div className="card bg-base-100 card-border shadow-sm group-hover:shadow-md transition-all overflow-hidden">
         {/* Cover */}
         <div className="aspect-video bg-base-200 overflow-hidden">
           {images.length === 0 ? (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
               <span className="text-5xl font-bold text-primary/25 select-none">
-                {house.name.charAt(0).toUpperCase()}
+                {property.name.charAt(0).toUpperCase()}
               </span>
             </div>
           ) : images.length === 1 ? (
             <img
               src={images[0]}
-              alt={house.name}
+              alt={property.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
@@ -49,9 +49,10 @@ export function HouseCard({ house }: HouseCardProps) {
         </div>
 
         <div className="card-body card-sm py-3">
-          <h2 className="card-title text-base">{house.name}</h2>
+          <h2 className="card-title text-base">{property.name}</h2>
           <span className="badge badge-neutral badge-sm">
-            {house.rooms.length} {house.rooms.length === 1 ? "room" : "rooms"}
+            {property.rooms.length}{" "}
+            {property.rooms.length === 1 ? "room" : "rooms"}
           </span>
         </div>
       </div>

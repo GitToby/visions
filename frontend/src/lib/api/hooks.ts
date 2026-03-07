@@ -31,7 +31,7 @@ export function useMe(enabled = true) {
   });
 }
 
-export function useHouses() {
+export function useProperties() {
   return useQuery({
     queryKey: ["get", "/houses"],
     queryFn: async () => {
@@ -42,17 +42,17 @@ export function useHouses() {
   });
 }
 
-export function useHouse(houseId: string) {
+export function useProperty(propertyId: string) {
   return useQuery({
-    queryKey: ["get", "/houses/{house_id}", houseId],
+    queryKey: ["get", "/houses/{property_id}", propertyId],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/houses/{house_id}", {
-        params: { path: { house_id: houseId } },
+      const { data, error } = await apiClient.GET("/houses/{property_id}", {
+        params: { path: { property_id: propertyId } },
       });
       if (error) throw error;
       return data;
     },
-    enabled: !!houseId,
+    enabled: !!propertyId,
   });
 }
 
@@ -67,17 +67,17 @@ export function useStyles() {
   });
 }
 
-export function useGenerations(houseId: string) {
+export function useGenerations(propertyId: string) {
   return useQuery({
-    queryKey: ["get", "/generation/houses/{house_id}", houseId],
+    queryKey: ["get", "/generation/houses/{property_id}", propertyId],
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        "/generation/houses/{house_id}",
-        { params: { path: { house_id: houseId } } }
+        "/generation/houses/{property_id}",
+        { params: { path: { property_id: propertyId } } }
       );
       if (error) throw error;
       return data;
     },
-    enabled: !!houseId,
+    enabled: !!propertyId,
   });
 }

@@ -28,12 +28,12 @@ async def test_get_house_not_found(client: AsyncClient):
 async def test_get_house_success(client: AsyncClient):
     create_resp = await client.post("/houses", json={"name": "Test House"})
     assert create_resp.status_code == 201
-    house_id = create_resp.json()["id"]
+    property_id = create_resp.json()["id"]
 
-    resp = await client.get(f"/houses/{house_id}")
+    resp = await client.get(f"/houses/{property_id}")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["id"] == house_id
+    assert data["id"] == property_id
     assert data["name"] == "Test House"
     assert data["room_count"] == 0
 
@@ -42,9 +42,9 @@ async def test_get_house_with_rooms(client: AsyncClient):
     """Test get_house returns correct room_count when rooms exist."""
     create_resp = await client.post("/houses", json={"name": "House with Rooms"})
     assert create_resp.status_code == 201
-    house_id = create_resp.json()["id"]
+    property_id = create_resp.json()["id"]
 
-    resp = await client.get(f"/houses/{house_id}")
+    resp = await client.get(f"/houses/{property_id}")
     assert resp.status_code == 200
     assert resp.json()["room_count"] == 0
 
@@ -52,12 +52,12 @@ async def test_get_house_with_rooms(client: AsyncClient):
 async def test_delete_house(client: AsyncClient):
     create_resp = await client.post("/houses", json={"name": "To Delete"})
     assert create_resp.status_code == 201
-    house_id = create_resp.json()["id"]
+    property_id = create_resp.json()["id"]
 
-    delete_resp = await client.delete(f"/houses/{house_id}")
+    delete_resp = await client.delete(f"/houses/{property_id}")
     assert delete_resp.status_code == 204
 
-    get_resp = await client.get(f"/houses/{house_id}")
+    get_resp = await client.get(f"/houses/{property_id}")
     assert get_resp.status_code == 404
 
 

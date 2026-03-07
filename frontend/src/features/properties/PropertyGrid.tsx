@@ -1,8 +1,8 @@
-import { useHouses } from "../../lib/api/hooks";
-import { HouseCard } from "./HouseCard";
+import { useProperties } from "../../lib/api/hooks";
+import { PropertyCard } from "./PropertyCard";
 
-export function HouseGrid() {
-  const { data: houses, isLoading, error } = useHouses();
+export function PropertyGrid() {
+  const { data: properties, isLoading, error } = useProperties();
 
   if (isLoading) {
     return (
@@ -20,7 +20,7 @@ export function HouseGrid() {
     );
   }
 
-  if (!houses || houses.length === 0) {
+  if (!properties || properties.length === 0) {
     return (
       <div className="text-center py-16 text-base-content/50">
         <p className="text-lg mb-2">No projects yet</p>
@@ -31,8 +31,8 @@ export function HouseGrid() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {houses.map((house) => (
-        <HouseCard key={house.id} house={house} />
+      {properties.map((property) => (
+        <PropertyCard key={property.id} property={property} />
       ))}
     </div>
   );

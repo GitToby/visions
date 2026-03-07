@@ -3,7 +3,7 @@ import { AuthProvider } from "./features/auth/AuthContext";
 import { ProtectedRoute } from "./features/auth/ProtectedRoute";
 import { AuthCallbackPage } from "./pages/AuthCallbackPage";
 import { HomePage } from "./pages/HomePage";
-import { HouseDetailPage } from "./pages/HouseDetailPage";
+import { PropertyDetailPage } from "./pages/PropertyDetailPage";
 import { LandingPage } from "./pages/LandingPage";
 
 export default function App() {
@@ -13,8 +13,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/houses" element={<HomePage />} />
-          <Route path="/houses/:houseId" element={<HouseDetailPage />} />
+          <Route path="/properties" element={<HomePage />} />
+          <Route path="/properties/:propertyId" element={<PropertyDetailPage />} />
         </Route>
       </Routes>
     </AuthProvider>

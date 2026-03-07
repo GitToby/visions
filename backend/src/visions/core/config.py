@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(extra="ignore")
 
     # Application
     app_name: str = "Visions API"
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
     api_base_url: str = "http://localhost:8000"
 
-    # Database (Supabase PostgreSQL connection string)
+    # Database (NeonDB PostgreSQL connection string)
     database_host: str = "ep-noisy-lake-a4y55m57-pooler.us-east-1.aws.neon.tech"
     database_port: int = 5432
     database_name: str = "visions"

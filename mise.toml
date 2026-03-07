@@ -1,5 +1,6 @@
 [tools]
 age = "latest"
+atlas = "latest"
 bun    = "latest"
 fnox = "latest"
 uv     = "latest"

@@ -2,6 +2,7 @@
 
 import boto3
 from botocore.exceptions import ClientError
+from cachetools.func import ttl_cache
 from fastapi import HTTPException, status
 from fastapi.datastructures import UploadFile
 from loguru import logger
@@ -48,6 +49,7 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
 
 
+@ttl_cache(ttl=SIGNED_URL_EXPIRES - 3)
 def s3_presigned_url(*, bucket: str, key: str):
     """
     Generate a signed URL via the Supabase Storage SDK.

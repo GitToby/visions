@@ -59,7 +59,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/houses/{house_id}": {
+    "/houses/{property_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -67,18 +67,18 @@ export interface paths {
             cookie?: never;
         };
         /** Get House */
-        get: operations["get_house_houses__house_id__get"];
+        get: operations["get_house_houses__property_id__get"];
         /** Update House */
-        put: operations["update_house_houses__house_id__put"];
+        put: operations["update_house_houses__property_id__put"];
         post?: never;
         /** Delete House */
-        delete: operations["delete_house_houses__house_id__delete"];
+        delete: operations["delete_house_houses__property_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/houses/{house_id}/rooms": {
+    "/houses/{property_id}/rooms": {
         parameters: {
             query?: never;
             header?: never;
@@ -88,14 +88,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Create Room */
-        post: operations["create_room_houses__house_id__rooms_post"];
+        post: operations["create_room_houses__property_id__rooms_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/houses/{house_id}/rooms/{room_id}": {
+    "/houses/{property_id}/rooms/{room_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -103,18 +103,18 @@ export interface paths {
             cookie?: never;
         };
         /** Get Room */
-        get: operations["get_room_houses__house_id__rooms__room_id__get"];
+        get: operations["get_room_houses__property_id__rooms__room_id__get"];
         /** Update Room */
-        put: operations["update_room_houses__house_id__rooms__room_id__put"];
+        put: operations["update_room_houses__property_id__rooms__room_id__put"];
         post?: never;
         /** Delete Room */
-        delete: operations["delete_room_houses__house_id__rooms__room_id__delete"];
+        delete: operations["delete_room_houses__property_id__rooms__room_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/houses/{house_id}/rooms/{room_id}.png": {
+    "/houses/{property_id}/rooms/{room_id}.png": {
         parameters: {
             query?: never;
             header?: never;
@@ -122,7 +122,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Room Image */
-        get: operations["get_room_image_houses__house_id__rooms__room_id__png_get"];
+        get: operations["get_room_image_houses__property_id__rooms__room_id__png_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -168,7 +168,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/generation/houses/{house_id}": {
+    "/generation/houses/{property_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -179,7 +179,7 @@ export interface paths {
          * List Jobs For House
          * @description See all generation jobs for a house.
          */
-        get: operations["list_jobs_for_house_generation_houses__house_id__get"];
+        get: operations["list_jobs_for_house_generation_houses__property_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -229,8 +229,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** Body_create_room_houses__house_id__rooms_post */
-        Body_create_room_houses__house_id__rooms_post: {
+        /** Body_create_room_houses__property_id__rooms_post */
+        Body_create_room_houses__property_id__rooms_post: {
             /** Image */
             image: string;
             /**
@@ -239,8 +239,8 @@ export interface components {
              */
             label: string;
         };
-        /** Body_update_room_houses__house_id__rooms__room_id__put */
-        Body_update_room_houses__house_id__rooms__room_id__put: {
+        /** Body_update_room_houses__property_id__rooms__room_id__put */
+        Body_update_room_houses__property_id__rooms__room_id__put: {
             /** Image */
             image: string;
         };
@@ -342,7 +342,7 @@ export interface components {
              * House Id
              * Format: uuid
              */
-            house_id: string;
+            property_id: string;
             /** Label */
             label: string;
             /** Image Url */
@@ -489,12 +489,12 @@ export interface operations {
             };
         };
     };
-    get_house_houses__house_id__get: {
+    get_house_houses__property_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
             };
             cookie?: never;
         };
@@ -520,12 +520,12 @@ export interface operations {
             };
         };
     };
-    update_house_houses__house_id__put: {
+    update_house_houses__property_id__put: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
             };
             cookie?: never;
         };
@@ -555,12 +555,12 @@ export interface operations {
             };
         };
     };
-    delete_house_houses__house_id__delete: {
+    delete_house_houses__property_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
             };
             cookie?: never;
         };
@@ -584,18 +584,18 @@ export interface operations {
             };
         };
     };
-    create_room_houses__house_id__rooms_post: {
+    create_room_houses__property_id__rooms_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_create_room_houses__house_id__rooms_post"];
+                "multipart/form-data": components["schemas"]["Body_create_room_houses__property_id__rooms_post"];
             };
         };
         responses: {
@@ -619,12 +619,12 @@ export interface operations {
             };
         };
     };
-    get_room_houses__house_id__rooms__room_id__get: {
+    get_room_houses__property_id__rooms__room_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
                 room_id: string;
             };
             cookie?: never;
@@ -651,21 +651,21 @@ export interface operations {
             };
         };
     };
-    update_room_houses__house_id__rooms__room_id__put: {
+    update_room_houses__property_id__rooms__room_id__put: {
         parameters: {
             query?: {
                 label?: string | null;
             };
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
                 room_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "multipart/form-data": components["schemas"]["Body_update_room_houses__house_id__rooms__room_id__put"];
+                "multipart/form-data": components["schemas"]["Body_update_room_houses__property_id__rooms__room_id__put"];
             };
         };
         responses: {
@@ -689,12 +689,12 @@ export interface operations {
             };
         };
     };
-    delete_room_houses__house_id__rooms__room_id__delete: {
+    delete_room_houses__property_id__rooms__room_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
                 room_id: string;
             };
             cookie?: never;
@@ -719,7 +719,7 @@ export interface operations {
             };
         };
     };
-    get_room_image_houses__house_id__rooms__room_id__png_get: {
+    get_room_image_houses__property_id__rooms__room_id__png_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -792,12 +792,12 @@ export interface operations {
             };
         };
     };
-    list_jobs_for_house_generation_houses__house_id__get: {
+    list_jobs_for_house_generation_houses__property_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                house_id: string;
+                property_id: string;
             };
             cookie?: never;
         };

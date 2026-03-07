@@ -250,8 +250,8 @@ export function CreateHouseButton() {
 
 **Path parameters:**
 ```tsx
-const { data: house } = useQuery("/houses/{house_id}", "get", {
-  params: { path: { house_id: id } },
+const { data: house } = useQuery("/houses/{property_id}", "get", {
+  params: { path: { property_id: id } },
 });
 ```
 

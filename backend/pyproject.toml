@@ -24,6 +24,7 @@ dependencies = [
     # utilities
     "loguru>=0.7.3",
     "greenlet>=3.3.2",
+    "cachetools>=6.2.6",
 ]
 
 [dependency-groups]

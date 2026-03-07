@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
-from visions.api import auth, generation, houses, styles
+from visions.api import auth, generation, property, styles
 from visions.core.config import SETTINGS
 
 logger.info("starting")
@@ -40,7 +40,7 @@ async def log_requests(request: Request, call_next):
 
 
 app.include_router(auth.router)
-app.include_router(houses.router)
+app.include_router(property.router)
 app.include_router(styles.router)
 app.include_router(generation.router)
 

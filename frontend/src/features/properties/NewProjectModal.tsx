@@ -42,7 +42,7 @@ export function NewProjectModal({ open, onClose }: NewProjectModalProps) {
     }
     await queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
     onClose();
-    navigate(`/houses/${data.id}`);
+    navigate(`/properties/${data.id}`);
   };
 
   return (

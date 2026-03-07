@@ -11,21 +11,21 @@ from visions.models import BUILTIN_STYLES_KV, GenerationJob, Room, User
 from visions.services import ai
 
 
-async def get_jobs_for_house(db: AsyncSession, house_id: uuid.UUID) -> list[GenerationJob]:
-    logger.debug("Fetching generation jobs | house_id={}", house_id)
-    result = await db.exec(select(GenerationJob).join(Room).where(Room.house_id == house_id))
+async def get_jobs_for_house(db: AsyncSession, property_id: uuid.UUID) -> list[GenerationJob]:
+    logger.debug("Fetching generation jobs | property_id={}", property_id)
+    result = await db.exec(select(GenerationJob).join(Room).where(Room.property_id == property_id))
     jobs = list(result.all())
-    logger.debug("Found {} job(s) | house_id={}", len(jobs), house_id)
+    logger.debug("Found {} job(s) | property_id={}", len(jobs), property_id)
     return jobs
 
 
 async def create_jobs(
-    db: AsyncSession, *, house_id: uuid.UUID, styles: set[str], sumbitter: User
+    db: AsyncSession, *, property_id: uuid.UUID, styles: set[str], sumbitter: User
 ) -> list[GenerationJob]:
     """Create pending GenerationJob rows for every room x style combination."""
     styles = {style for style in styles if style in BUILTIN_STYLES_KV.keys()}
 
-    q = select(Room).where(Room.house_id == house_id)
+    q = select(Room).where(Room.property_id == property_id)
     rooms = await db.exec(q)
 
     jobs = [

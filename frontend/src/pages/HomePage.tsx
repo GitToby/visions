@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navbar } from "../components/Navbar";
-import { HouseGrid } from "../features/houses/HouseGrid";
-import { NewProjectModal } from "../features/houses/NewProjectModal";
+import { PropertyGrid } from "../features/properties/PropertyGrid";
+import { NewProjectModal } from "../features/properties/NewProjectModal";
 
 export function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -20,7 +20,7 @@ export function HomePage() {
             New Project
           </button>
         </div>
-        <HouseGrid />
+        <PropertyGrid />
       </main>
       <NewProjectModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>

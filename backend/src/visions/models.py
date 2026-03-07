@@ -94,8 +94,9 @@ class FileStoreMixin(ABC):
 
     async def upload_image(self, image: UploadFile) -> None:
         """Upload the image to S3"""
-        
+
         with Image.open(image.file) as img:
+            # todo: make all images below a specific size
             _bytes = BytesIO()
             img.save(_bytes, format="WebP")
             size = _bytes.tell()
@@ -114,7 +115,7 @@ class FileStoreMixin(ABC):
             return storage.download_file(bucket=self.__bucket__, key=self.image_key)
         except Exception:
             return None
-            
+
     async def delete_image(self):
         """Deletes the image from the file store."""
         try:
@@ -142,7 +143,7 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
 
     id: uuid.UUID = Field(primary_key=True)
 
-    houses: list[House] = Relationship(back_populates="owner")
+    propertys: list[Property] = Relationship(back_populates="owner")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -166,30 +167,30 @@ class UserResponse(BaseModel):
     updated_at: datetime | None
 
 
-# ─── House ────────────────────────────────────────────────────────────────────
-# A house is the container of rooms. It is owned by a user
+# ─── Property ────────────────────────────────────────────────────────────────────
+# A property is the container of rooms. It is owned by a user
 
 
-class HouseBase(SQLModel):
+class PropertyBase(SQLModel):
     name: str = Field(max_length=255)
 
 
-class HouseCreate(HouseBase):
+class PropertyCreate(PropertyBase):
     pass
 
 
-class HouseUpdate(SQLModel):
+class PropertyUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=255)
 
 
-class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
 
-    owner: User = Relationship(back_populates="houses")
-    rooms: list[Room] = Relationship(back_populates="house")
+    owner: User = Relationship(back_populates="propertys")
+    rooms: list[Room] = Relationship(back_populates="property")
 
-    async def to_response(self) -> HouseResponse:
-        return HouseResponse(
+    async def to_response(self) -> PropertyResponse:
+        return PropertyResponse(
             id=self.id,
             name=self.name,
             owner_id=self.owner_id,
@@ -199,7 +200,7 @@ class House(HouseBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
         )
 
 
-class HouseResponse(BaseModel):
+class PropertyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -211,7 +212,7 @@ class HouseResponse(BaseModel):
 
 
 # ─── Room ─────────────────────────────────────────────────────────────────────
-# A room belongs to a house, and has a label; this is its unique identifier.
+# A room belongs to a property, and has a label; this is its unique identifier.
 # Rooms are immutible when created - but their image can be uploaded multiple times.
 # Delete a room will delete all its images.
 
@@ -220,7 +221,7 @@ class RoomBase(SQLModel):
     """Base data used across the room model"""
 
     label: str
-    """What is the name of the room, should be unique in the house"""
+    """What is the name of the room, should be unique in the property"""
 
 
 class RoomUpdate(RoomBase):
@@ -233,8 +234,8 @@ class RoomUpdate(RoomBase):
 class RoomCreate(RoomUpdate):
     """Data needed to create a room"""
 
-    house_id: uuid.UUID
-    """The house this room belongs to"""
+    property_id: uuid.UUID
+    """The property this room belongs to"""
 
 
 class RoomDelete(RoomCreate):
@@ -249,9 +250,9 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     """
 
     __bucket__: str = SETTINGS.s3_bucket__rooms
-    __table_args__ = (UniqueConstraint("house_id", "label"),)
+    __table_args__ = (UniqueConstraint("property_id", "label"),)
 
-    house_id: uuid.UUID = Field(foreign_key="house.id", index=True)
+    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
     label: str = Field(max_length=100)
 
     @property
@@ -259,13 +260,13 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     def _image_key_prefix(self):
         return f"rooms/{self.id}"
 
-    house: House = Relationship(back_populates="rooms")
+    property: Property = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="room")
 
     async def to_response(self) -> RoomResponse:
         return RoomResponse(
             id=self.id,
-            house_id=self.house_id,
+            property_id=self.property_id,
             label=self.label,
             image_url=await self.get_image_url(),
             created_at=self.created_at,
@@ -279,7 +280,7 @@ class RoomResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    house_id: uuid.UUID
+    property_id: uuid.UUID
     label: str
     image_url: str | None
     created_at: datetime
@@ -345,7 +346,7 @@ class GenerationJobResponse(BaseModel):
 
 # ─── Design style ─────────────────────────────────────────────────────────────
 # A design style is a hypotheical set of rooms that have particular characteristics
-# that can be used to generate new rooms from house rooms.
+# that can be used to generate new rooms from property rooms.
 # for now this is not a table and isnt user creatable
 
 
@@ -394,7 +395,7 @@ BUILTIN_STYLES: list[DesignStyle] = [
     DesignStyle(
         name="Biophilic",
         description=(
-            "Design that brings nature indoors. Living walls, abundant houseplants, natural "
+            "Design that brings nature indoors. Living walls, abundant propertyplants, natural "
             "stone, wood, water features, and large windows for natural light and views."
         ),
     ),

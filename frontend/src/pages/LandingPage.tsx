@@ -10,7 +10,7 @@ export function LandingPage() {
 
   useEffect(() => {
     if (session) {
-      navigate("/houses", { replace: true });
+      navigate("/properties", { replace: true });
     }
   }, [session, navigate]);
 
