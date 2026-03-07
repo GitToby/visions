@@ -41,7 +41,7 @@ export function LandingPage() {
           <div className="relative hidden lg:flex gap-3 items-end">
             {/* Before card */}
             <div className="flex-1 rounded-2xl overflow-hidden shadow-lg border border-base-300">
-              <div className="aspect-[4/3] bg-gradient-to-br from-base-300 to-base-200 flex items-end">
+              <div className="aspect-4/3 bg-linear-to-br from-base-300 to-base-200 flex items-end">
                 <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
                   <span className="badge badge-neutral badge-sm">Before</span>
                   <span className="text-xs text-base-content/50 truncate">
@@ -58,7 +58,7 @@ export function LandingPage() {
 
             {/* After card */}
             <div className="flex-1 rounded-2xl overflow-hidden shadow-xl border border-primary/30 ring-2 ring-primary/20">
-              <div className="aspect-[4/3] bg-gradient-to-br from-primary/30 to-secondary/20 flex items-end">
+              <div className="aspect-4/3 bg-linear-to-br from-primary/30 to-secondary/20 flex items-end">
                 <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
                   <span className="badge badge-primary badge-sm">After</span>
                   <span className="text-xs text-base-content/50 truncate">
@@ -75,29 +75,36 @@ export function LandingPage() {
       <section className="bg-base-200 py-16 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-10">How it works</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="badge badge-primary badge-lg mb-3">1</div>
-              <h3 className="font-semibold mb-1">Create a project</h3>
-              <p className="text-sm text-base-content/60">
-                Name your project and group all the rooms you want to redesign.
-              </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body items-center text-center gap-2">
+                <div className="badge badge-primary badge-lg">1</div>
+                <h3 className="card-title text-base">Create a project</h3>
+                <p className="text-sm text-base-content/60">
+                  Name your project and group all the rooms you want to
+                  redesign.
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="badge badge-primary badge-lg mb-3">2</div>
-              <h3 className="font-semibold mb-1">Upload room photos</h3>
-              <p className="text-sm text-base-content/60">
-                Add photos of each room. The AI preserves layout and
-                architecture.
-              </p>
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body items-center text-center gap-2">
+                <div className="badge badge-primary badge-lg">2</div>
+                <h3 className="card-title text-base">Upload room photos</h3>
+                <p className="text-sm text-base-content/60">
+                  Add photos of each room. The AI preserves layout and
+                  architecture.
+                </p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="badge badge-primary badge-lg mb-3">3</div>
-              <h3 className="font-semibold mb-1">Pick a style & generate</h3>
-              <p className="text-sm text-base-content/60">
-                Choose from curated design styles and get AI-rendered results in
-                seconds.
-              </p>
+            <div className="card bg-base-100 shadow-sm">
+              <div className="card-body items-center text-center gap-2">
+                <div className="badge badge-primary badge-lg">3</div>
+                <h3 className="card-title text-base">Pick a style & generate</h3>
+                <p className="text-sm text-base-content/60">
+                  Choose from curated design styles and get AI-rendered results
+                  in seconds.
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -311,7 +311,7 @@ function AddRoomCard({ onAdd }: { onAdd: (label: string) => void }) {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="input input-bordered input-sm w-full text-center"
+            className="input input-sm w-full text-center"
             maxLength={100}
           />
         </div>
@@ -346,7 +346,6 @@ function AddRoomCard({ onAdd }: { onAdd: (label: string) => void }) {
         <Plus size={36} strokeWidth={1.5} />
         <span className="text-xs">Add room</span>
       </div>
-      <div className="px-3 py-2 min-h-[36px]" />
     </button>
   );
 }
@@ -388,7 +387,12 @@ export function RoomUploader({
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }, []);
 
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   const handleStateChange = useCallback((label: string, state: SlotState) => {
     setSlotStates((prev) => ({ ...prev, [label]: state }));
@@ -412,9 +416,11 @@ export function RoomUploader({
   return (
     <div className="relative">
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-lg bg-base-300 shadow-lg text-sm pointer-events-none animate-fade-in">
-          <CheckCircle size={14} className="text-success shrink-0" />
-          {toast}
+        <div className="toast toast-center z-50 pointer-events-none">
+          <div className="alert alert-success text-sm gap-2 py-2">
+            <CheckCircle size={14} />
+            <span>{toast}</span>
+          </div>
         </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -440,7 +446,10 @@ export function RoomUploader({
             onStateChange={(s) => handleStateChange(label, s)}
             onRoomAdded={onRoomAdded}
             onRemove={() => handleRemoveCustom(label)}
-            onDelete={(l) => { handleRemoveCustom(label); showToast(`${l} deleted`); }}
+            onDelete={(l) => {
+              handleRemoveCustom(label);
+              showToast(`${l} deleted`);
+            }}
           />
         ))}
         <AddRoomCard onAdd={handleAddCustom} />

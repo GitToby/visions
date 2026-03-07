@@ -80,12 +80,14 @@ export function HouseDetailPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 space-y-10">
         {/* Header */}
         <div>
-          <Link
-            to="/houses"
-            className="text-sm text-base-content/50 hover:text-base-content mb-2 inline-block"
-          >
-            ← My Projects
-          </Link>
+          <div className="breadcrumbs text-sm mb-1">
+            <ul>
+              <li>
+                <Link to="/houses">My Projects</Link>
+              </li>
+              <li>{house.name}</li>
+            </ul>
+          </div>
           <h1 className="text-2xl font-bold">{house.name}</h1>
         </div>
 

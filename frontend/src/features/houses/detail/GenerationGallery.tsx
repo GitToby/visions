@@ -22,7 +22,7 @@ function JobCard({ job }: { job: GenerationJobResponse }) {
           <div className="w-full h-full skeleton rounded-none" />
         )}
         {status === "completed" && (
-          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
+          <div className="w-full h-full bg-linear-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
             <span className="text-4xl">✦</span>
             <span className="text-xs">Ready</span>
           </div>
@@ -53,7 +53,7 @@ function JobCard({ job }: { job: GenerationJobResponse }) {
       </div>
 
       {/* Footer */}
-      <div className="px-3 py-2">
+      <div className="card-body card-sm py-2">
         <p className="text-sm font-medium truncate">{job.style}</p>
       </div>
     </div>
