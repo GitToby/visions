@@ -173,6 +173,8 @@ class UserResponse(BaseModel):
 
 class PropertyBase(SQLModel):
     name: str = Field(max_length=255)
+    description: str | None = Field(default=None)
+    address: str | None = Field(default=None, max_length=500)
 
 
 class PropertyCreate(PropertyBase):
@@ -181,6 +183,8 @@ class PropertyCreate(PropertyBase):
 
 class PropertyUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None)
+    address: str | None = Field(default=None, max_length=500)
 
 
 class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
@@ -193,6 +197,8 @@ class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
         return PropertyResponse(
             id=self.id,
             name=self.name,
+            description=self.description,
+            address=self.address,
             owner_id=self.owner_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
@@ -205,6 +211,8 @@ class PropertyResponse(BaseModel):
 
     id: uuid.UUID
     name: str
+    description: str | None
+    address: str | None
     owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None

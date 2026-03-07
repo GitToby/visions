@@ -53,7 +53,12 @@ async def get_or_404(db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.U
 
 async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyCreate) -> Property:
     logger.debug("Creating house | owner_id={} name={!r}", owner_id, data.name)
-    house = Property(name=data.name, owner_id=owner_id)
+    house = Property(
+        name=data.name,
+        description=data.description,
+        address=data.address,
+        owner_id=owner_id,
+    )
     db.add(house)
     await db.commit()
     await db.refresh(house)
@@ -62,7 +67,17 @@ async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyCreate)
     return house
 
 
-async def update(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyUpdate) -> Property: ...
+async def update(db: AsyncSession, *, house: Property, data: PropertyUpdate) -> Property:
+    if data.name is not None:
+        house.name = data.name
+    if data.description is not None:
+        house.description = data.description
+    if data.address is not None:
+        house.address = data.address
+    db.add(house)
+    await db.commit()
+    await db.refresh(house, attribute_names=["rooms"])
+    return house
 
 
 async def delete(db: AsyncSession, property: Property) -> None:

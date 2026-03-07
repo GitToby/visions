@@ -308,6 +308,10 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Description */
+            description?: string | null;
+            /** Address */
+            address?: string | null;
             /**
              * Owner Id
              * Format: uuid
@@ -327,6 +331,10 @@ export interface components {
         HouseUpdate: {
             /** Name */
             name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Address */
+            address?: string | null;
         };
         /**
          * RoomResponse

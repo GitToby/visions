@@ -19,7 +19,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         {/* Cover */}
         <div className="aspect-video bg-base-200 overflow-hidden">
           {images.length === 0 ? (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+            <div className="w-full h-full bg-linear-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
               <span className="text-5xl font-bold text-primary/25 select-none">
                 {property.name.charAt(0).toUpperCase()}
               </span>

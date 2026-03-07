@@ -245,7 +245,7 @@ function RoomSlot({
         <div className="px-3 py-2 flex items-center justify-between min-h-9">
           <span className="text-sm font-medium">{label}</span>
           {!isBusy && (
-            <span className="text-xs text-base-content/40 flex items-center gap-2">
+            <span className="text-xs text-base-content/40 flex items-center gap-0.5">
               {state.status === "uploaded" || state.status === "no-image" ? (
                 <>
                   <button type="button" className="btn btn-xs btn-ghost">

@@ -52,11 +52,7 @@ async def update_property(
     house_update: Annotated[PropertyUpdate, Body(...)],
 ) -> PropertyResponse:
     house = await house_service.get_or_404(db, property_id, current_user.id)
-    if house_update.name is not None:
-        house.name = house_update.name
-    db.add(house)
-    await db.commit()
-    await db.refresh(house, attribute_names=["rooms"])
+    house = await house_service.update(db, house=house, data=house_update)
     return await house.to_response()
 
 
