@@ -13,8 +13,8 @@ model = GoogleModel(SETTINGS.gemini_model, provider=provider)
 agent = Agent(model, output_type=BinaryImage)
 
 
-def system_prompt(style_name: str, style_description: str) -> str:
-    return (
+def system_prompt(style_name: str, style_description: str, extra_context: str | None = None) -> str:
+    prompt = (
         f"You are an expert interior designer. Redesign this room in the '{style_name}' style.\n\n"
         f"Style description: {style_description}\n\n"
         "Requirements:\n"
@@ -23,3 +23,6 @@ def system_prompt(style_name: str, style_description: str) -> str:
         "- Maintain realistic lighting and proportions.\n"
         "- Output a photorealistic interior photograph."
     )
+    if extra_context:
+        prompt += f"\n\nAdditional instructions:\n\n{extra_context}"
+    return prompt

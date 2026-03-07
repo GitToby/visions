@@ -248,8 +248,12 @@ export interface components {
         DesignStyle: {
             /** Name */
             name: string;
+            /** Slug */
+            slug: string;
             /** Description */
             description: string;
+            /** Image Urls */
+            image_urls: Record<string, string>;
         };
         /** GenerationJobCreate */
         GenerationJobCreate: {
@@ -260,6 +264,8 @@ export interface components {
             room_id: string;
             /** Style */
             style: string;
+            /** Extra Context */
+            extra_context?: string | null;
         };
         /** GenerationJobResponse */
         GenerationJobResponse: {

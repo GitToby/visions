@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, status
@@ -24,16 +25,21 @@ async def start_generation_for_room(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
     await house_service.get_or_404(db, room.property_id, current_user.id)
 
-    job = GenerationJob(room_id=room.id, style=payload.style, submitter_id=current_user.id)
+    job = GenerationJob(
+        room_id=room.id,
+        style=payload.style,
+        submitter_id=current_user.id,
+        extra_context=payload.extra_context,
+    )
     db.add(job)
     await db.commit()
     await db.refresh(job)
 
     background_tasks.add_task(generation_service.submit_job, db, job)
-    return [job.to_response()]
+    return [await job.to_response()]
 
 
-@router.get("/houses/{property_id}", response_model=list[GenerationJobResponse])
+@router.get("/property/{property_id}", response_model=list[GenerationJobResponse])
 async def list_jobs_for_house(
     property_id: uuid.UUID,
     db: DBSession,
@@ -44,7 +50,7 @@ async def list_jobs_for_house(
     """
     await house_service.get_or_404(db, property_id, current_user.id)
     jobs = await generation_service.get_jobs_for_house(db, property_id)
-    return [j.to_response() for j in jobs]
+    return await asyncio.gather(*[j.to_response() for j in jobs])
 
 
 @router.get("/jobs/{job_id}", response_model=GenerationJobResponse)
@@ -59,4 +65,4 @@ async def get_job(
     job = await db.get(GenerationJob, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return job.to_response()
+    return await job.to_response()

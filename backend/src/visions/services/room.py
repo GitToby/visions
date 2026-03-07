@@ -31,7 +31,7 @@ async def get_or_404(
 async def create(db: AsyncSession, *, room_create: RoomCreate) -> Room:
     room = Room(property_id=room_create.property_id, label=room_create.label)
     db.add(room)
-    await room.upload_image(room_create.image)
+    await room.upload_image(room_create.image.file)
     await db.commit()
     await db.refresh(room)
     return room
@@ -39,7 +39,7 @@ async def create(db: AsyncSession, *, room_create: RoomCreate) -> Room:
 
 async def update(db: AsyncSession, *, room: Room, room_update: RoomUpdate) -> Room:
     room.label = room_update.label
-    await room.upload_image(room_update.image)
+    await room.upload_image(room_update.image.file)
     await db.commit()
     await db.refresh(room)
     return room

@@ -1,8 +1,37 @@
+import { useRef } from "react";
 import { useStyles } from "../../lib/api/hooks";
+import type { components } from "../../lib/api/schema";
+
+type DesignStyle = components["schemas"]["DesignStyle"];
 
 interface StylePickerProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+}
+
+function StyleCarousel({ style }: { style: DesignStyle }) {
+  const images = Object.entries(style.image_urls);
+  const ref = useRef<HTMLDivElement>(null);
+
+  if (images.length === 0) {
+    return <div className="w-full h-48 bg-base-200 rounded-t-box" />;
+  }
+
+  return (
+    <div className="relative rounded-t-box overflow-hidden">
+      <div ref={ref} className="carousel carousel-center w-full h-48 gap-2">
+        {images.map(([room, url]) => (
+          <div key={room} className="carousel-item w-3/4 shrink-0">
+            <img
+              src={url}
+              alt={`${style.name} – ${room}`}
+              className="w-full h-full object-cover rounded-2xl shadow-2xl"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
@@ -41,15 +70,14 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
       {styles.map((style) => {
         const selected = selectedIds.includes(style.name);
         return (
-          <button
+          <div
             key={style.name}
-            type="button"
             onClick={() => toggle(style.name)}
-            className={`card bg-base-100 card-border text-left transition-all cursor-pointer hover:shadow-md ${
+            className={`card bg-base-100 card-border cursor-pointer transition-all hover:shadow-md ${
               selected ? "ring-2 ring-primary border-primary" : ""
             }`}
           >
-            <div className="w-full h-48 bg-base-200 rounded-t-box" />
+            <StyleCarousel style={style} />
             <div className="card-body card-sm">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{style.name}</h3>
@@ -61,7 +89,7 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
                 {style.description}
               </p>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

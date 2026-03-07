@@ -5,6 +5,7 @@ import {
   CheckCircle,
   ChefHat,
   Home,
+  Images,
   type LucideIcon,
   Monitor,
   Plus,
@@ -16,8 +17,8 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { apiClient } from "../../../lib/api/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiClient, useGenerations } from "../../../lib/api/hooks";
 import type { components } from "../../../lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
@@ -25,6 +26,7 @@ type RoomResponse = components["schemas"]["RoomResponse"];
 interface RoomUploaderProps {
   propertyId: string;
   onRoomAdded: (room: RoomResponse) => void;
+  onRoomClick?: (room: RoomResponse) => void;
   initialRooms?: RoomResponse[];
 }
 
@@ -54,8 +56,11 @@ interface RoomSlotProps {
   state: SlotState;
   onStateChange: (state: SlotState) => void;
   onRoomAdded: (room: RoomResponse) => void;
+  onRoomClick?: (room: RoomResponse) => void;
   onRemove?: () => void;
   onDelete?: (label: string) => void;
+  completedCount?: number;
+  pendingCount?: number;
 }
 
 function RoomSlot({
@@ -65,8 +70,11 @@ function RoomSlot({
   state,
   onStateChange,
   onRoomAdded,
+  onRoomClick,
   onRemove,
   onDelete,
+  completedCount = 0,
+  pendingCount = 0,
 }: RoomSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -154,6 +162,14 @@ function RoomSlot({
     if (!isBusy) inputRef.current?.click();
   };
 
+  const handleCardClick = () => {
+    if (state.status === "uploaded" && onRoomClick) {
+      onRoomClick(state.room);
+    } else {
+      openPicker();
+    }
+  };
+
   const isUploading = state.status === "uploading";
   const isBusy = isUploading || isDeleting;
   const hasImage =
@@ -181,7 +197,7 @@ function RoomSlot({
             ? "cursor-wait"
             : "cursor-pointer hover:shadow-md hover:border-primary/40"
         } ${isDragOver ? "border-primary ring-2 ring-primary/30" : ""}`}
-        onClick={openPicker}
+        onClick={handleCardClick}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={() => setIsDragOver(false)}
@@ -214,12 +230,30 @@ function RoomSlot({
                 </div>
               )}
               {state.status === "uploaded" && (
-                <div className="absolute top-2 right-2">
-                  <span className="badge badge-success badge-sm gap-1 shadow">
-                    <CheckCircle size={10} />
-                    Uploaded
-                  </span>
-                </div>
+                <>
+                  <div className="absolute top-2 right-2">
+                    <span className="badge badge-success badge-sm gap-1 shadow">
+                      <CheckCircle size={10} />
+                      Uploaded
+                    </span>
+                  </div>
+                  {(completedCount > 0 || pendingCount > 0) && (
+                    <div className="absolute bottom-2 left-2 flex gap-1">
+                      {completedCount > 0 && (
+                        <span className="badge badge-sm badge-neutral gap-1 shadow">
+                          <Images size={9} />
+                          {completedCount}
+                        </span>
+                      )}
+                      {pendingCount > 0 && (
+                        <span className="badge badge-sm badge-warning gap-1 shadow">
+                          <span className="loading loading-dots loading-xs" />
+                          {pendingCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
               {state.status === "error" && (
                 <div className="absolute inset-0 bg-error/30 flex items-center justify-center p-2">
@@ -248,7 +282,11 @@ function RoomSlot({
             <span className="text-xs text-base-content/40 flex items-center gap-0.5">
               {state.status === "uploaded" || state.status === "no-image" ? (
                 <>
-                  <button type="button" className="btn btn-xs btn-ghost">
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost"
+                    onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+                  >
                     <RefreshCw size={11} />
                     Replace
                   </button>
@@ -360,8 +398,21 @@ function AddRoomCard({ onAdd }: { onAdd: (label: string) => void }) {
 export function RoomUploader({
   propertyId,
   onRoomAdded,
+  onRoomClick,
   initialRooms = [],
 }: RoomUploaderProps) {
+  const { data: generations } = useGenerations(propertyId);
+
+  const countsByRoomId = useMemo(() => {
+    const map = new Map<string, { completed: number; pending: number }>();
+    for (const job of generations ?? []) {
+      const c = map.get(job.room_id) ?? { completed: 0, pending: 0 };
+      if (job.completed_at && !job.error_message) c.completed++;
+      else if (!job.completed_at && !job.error_message) c.pending++;
+      map.set(job.room_id, c);
+    }
+    return map;
+  }, [generations]);
   const [customLabels, setCustomLabels] = useState<string[]>(() =>
     initialRooms
       .filter((r) => !DEFAULT_LABELS.has(r.label))
@@ -430,35 +481,45 @@ export function RoomUploader({
           </div>
         </div>
       )}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {DEFAULT_ROOM_TYPES.map(({ label, Icon }) => (
-          <RoomSlot
-            key={label}
-            label={label}
-            Icon={Icon}
-            propertyId={propertyId}
-            state={slotStates[label]}
-            onStateChange={(s) => handleStateChange(label, s)}
-            onRoomAdded={onRoomAdded}
-            onDelete={(l) => showToast(`${l} deleted`)}
-          />
-        ))}
-        {customLabels.map((label) => (
-          <RoomSlot
-            key={label}
-            label={label}
-            Icon={Home}
-            propertyId={propertyId}
-            state={slotStates[label]}
-            onStateChange={(s) => handleStateChange(label, s)}
-            onRoomAdded={onRoomAdded}
-            onRemove={() => handleRemoveCustom(label)}
-            onDelete={(l) => {
-              handleRemoveCustom(label);
-              showToast(`${l} deleted`);
-            }}
-          />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {[
+          ...DEFAULT_ROOM_TYPES,
+          ...customLabels.map((label) => ({ label, Icon: Home })),
+        ]
+          .sort((a, b) => {
+            const aUploaded = slotStates[a.label]?.status === "uploaded";
+            const bUploaded = slotStates[b.label]?.status === "uploaded";
+            if (aUploaded !== bUploaded) return aUploaded ? -1 : 1;
+            return a.label.localeCompare(b.label);
+          })
+          .map(({ label, Icon }) => {
+            const isCustom = customLabels.includes(label);
+            const slotState = slotStates[label];
+            const roomId =
+              slotState.status === "uploaded" || slotState.status === "no-image"
+                ? slotState.room.id
+                : null;
+            const counts = roomId ? countsByRoomId.get(roomId) : null;
+            return (
+              <RoomSlot
+                key={label}
+                label={label}
+                Icon={Icon}
+                propertyId={propertyId}
+                state={slotState}
+                onStateChange={(s) => handleStateChange(label, s)}
+                onRoomAdded={onRoomAdded}
+                onRoomClick={onRoomClick}
+                onRemove={isCustom ? () => handleRemoveCustom(label) : undefined}
+                onDelete={(l) => {
+                  if (isCustom) handleRemoveCustom(label);
+                  showToast(`${l} deleted`);
+                }}
+                completedCount={counts?.completed}
+                pendingCount={counts?.pending}
+              />
+            );
+          })}
         <AddRoomCard onAdd={handleAddCustom} />
       </div>
     </div>

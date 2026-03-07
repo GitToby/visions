@@ -1,12 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { MapPin, Pencil } from "lucide-react";
+import { MapPin, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
-import { GenerationGallery } from "../features/properties/detail/GenerationGallery";
+import { GenerateWizardModal } from "../features/properties/detail/GenerateWizardModal";
+import { RoomImagesModal } from "../features/properties/detail/RoomImagesModal";
 import { RoomUploader } from "../features/properties/detail/RoomUploader";
-import { StylePicker } from "../features/styles/StylePicker";
 import { apiClient, useProperty } from "../lib/api/hooks";
 import type { components } from "../lib/api/schema";
 
@@ -15,10 +15,10 @@ type RoomResponse = components["schemas"]["RoomResponse"];
 export function PropertyDetailPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const { data: property, isLoading, error } = useProperty(propertyId ?? "");
+  const queryClient = useQueryClient();
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
-  const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([]);
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<RoomResponse | null>(null);
 
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState("");
@@ -34,8 +34,6 @@ export function PropertyDetailPage() {
   const [editDescription, setEditDescription] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
   const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
-
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (property?.rooms) setRooms(property.rooms);
@@ -63,7 +61,7 @@ export function PropertyDetailPage() {
     });
     setSavingName(false);
     setEditingName(false);
-    await invalidateProperty();
+    void invalidateProperty();
   };
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") void saveEditName();
@@ -87,7 +85,7 @@ export function PropertyDetailPage() {
     });
     setSavingAddress(false);
     setEditingAddress(false);
-    await invalidateProperty();
+    void invalidateProperty();
   };
   const handleAddressKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") void saveEditAddress();
@@ -111,7 +109,7 @@ export function PropertyDetailPage() {
     });
     setSavingDescription(false);
     setEditingDescription(false);
-    await invalidateProperty();
+    void invalidateProperty();
   };
   const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") cancelEditDescription();
@@ -120,27 +118,6 @@ export function PropertyDetailPage() {
 
   const handleRoomAdded = (room: RoomResponse) => {
     setRooms((prev) => [...prev.filter((r) => r.label !== room.label), room]);
-  };
-
-  const handleGenerate = async () => {
-    if (!propertyId || rooms.length === 0 || selectedStyleIds.length === 0) return;
-    setGenerating(true);
-    setGenerateError(null);
-    const jobs = rooms.flatMap((r) =>
-      selectedStyleIds.map((style) => ({ room_id: r.id, style }))
-    );
-    const results = await Promise.all(
-      jobs.map((body) => apiClient.POST("/generation", { body }))
-    );
-    const apiError = results.find((r) => r.error)?.error ?? null;
-    setGenerating(false);
-    if (apiError) {
-      setGenerateError("Generation failed. Please try again.");
-      return;
-    }
-    await queryClient.invalidateQueries({
-      queryKey: ["get", "/generation/houses/{property_id}", propertyId],
-    });
   };
 
   if (isLoading) {
@@ -167,136 +144,150 @@ export function PropertyDetailPage() {
     );
   }
 
-  const canGenerate = rooms.length > 0 && selectedStyleIds.length > 0;
+  const uploadedRooms = rooms.filter((r) => r.image_url);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 space-y-10">
         {/* Header */}
-        <div>
-          <div className="breadcrumbs text-sm mb-1">
-            <ul>
-              <li>
-                <Link to="/properties">My Projects</Link>
-              </li>
-              <li>{property.name}</li>
-            </ul>
-          </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="breadcrumbs text-sm mb-1">
+              <ul>
+                <li>
+                  <Link to="/properties">My Projects</Link>
+                </li>
+                <li>{property.name}</li>
+              </ul>
+            </div>
 
-          {/* Name */}
-          {editingName ? (
-            <div className="flex items-center gap-2">
-              <input
-                ref={nameInputRef}
-                type="text"
-                className="input input-ghost text-2xl font-bold px-1 h-auto py-0 focus:outline-none w-full max-w-sm"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={handleNameKeyDown}
-                onBlur={() => void saveEditName()}
-                disabled={savingName}
-                maxLength={100}
-              />
-              {savingName && (
-                <span className="loading loading-spinner loading-sm text-base-content/40" />
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 group/title">
-              <h1 className="text-2xl font-bold">{property.name}</h1>
-              <button
-                type="button"
-                onClick={startEditName}
-                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/title:opacity-100 transition-opacity"
-                title="Rename project"
-              >
-                <Pencil size={13} />
-              </button>
-            </div>
-          )}
+            {/* Name */}
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  className="input input-ghost text-2xl font-bold px-1 h-auto py-0 focus:outline-none w-full max-w-sm"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={handleNameKeyDown}
+                  onBlur={() => void saveEditName()}
+                  disabled={savingName}
+                  maxLength={100}
+                />
+                {savingName && (
+                  <span className="loading loading-spinner loading-sm text-base-content/40" />
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group/title">
+                <h1 className="text-2xl font-bold">{property.name}</h1>
+                <button
+                  type="button"
+                  onClick={startEditName}
+                  className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/title:opacity-100 transition-opacity"
+                  title="Rename project"
+                >
+                  <Pencil size={13} />
+                </button>
+              </div>
+            )}
 
-          {/* Address */}
-          {editingAddress ? (
-            <div className="flex items-center gap-2 mt-1">
-              <MapPin size={14} className="text-base-content/60 shrink-0" />
-              <input
-                ref={addressInputRef}
-                type="text"
-                className="input input-ghost text-sm px-1 h-auto py-0 focus:outline-none w-full max-w-sm"
-                value={editAddress}
-                onChange={(e) => setEditAddress(e.target.value)}
-                onKeyDown={handleAddressKeyDown}
-                onBlur={() => void saveEditAddress()}
-                disabled={savingAddress}
-                maxLength={500}
-                placeholder="Enter address…"
-              />
-              {savingAddress && (
-                <span className="loading loading-spinner loading-xs text-base-content/40" />
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 mt-1 group/address">
-              <MapPin size={14} className="text-base-content/60 shrink-0" />
-              <span className="text-sm text-base-content/60">
-                {property.address ?? <span className="italic text-base-content/30">No address</span>}
-              </span>
-              <button
-                type="button"
-                onClick={startEditAddress}
-                className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/address:opacity-100 transition-opacity"
-                title="Edit address"
-              >
-                <Pencil size={11} />
-              </button>
-            </div>
-          )}
+            {/* Address */}
+            {editingAddress ? (
+              <div className="flex items-center gap-2 mt-1">
+                <MapPin size={14} className="text-base-content/60 shrink-0" />
+                <input
+                  ref={addressInputRef}
+                  type="text"
+                  className="input input-ghost text-sm px-1 h-auto py-0 focus:outline-none w-full max-w-sm"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  onKeyDown={handleAddressKeyDown}
+                  onBlur={() => void saveEditAddress()}
+                  disabled={savingAddress}
+                  maxLength={500}
+                  placeholder="Enter address…"
+                />
+                {savingAddress && (
+                  <span className="loading loading-spinner loading-xs text-base-content/40" />
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 mt-1 group/address">
+                <MapPin size={14} className="text-base-content/60 shrink-0" />
+                <span className="text-sm text-base-content/60">
+                  {property.address ?? <span className="italic text-base-content/30">No address</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={startEditAddress}
+                  className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/address:opacity-100 transition-opacity"
+                  title="Edit address"
+                >
+                  <Pencil size={11} />
+                </button>
+              </div>
+            )}
 
-          {/* Description */}
-          {editingDescription ? (
-            <div className="mt-3 max-w-2xl">
-              <textarea
-                ref={descriptionInputRef}
-                className="textarea textarea-bordered w-full text-sm min-h-24 resize-y"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                onKeyDown={handleDescriptionKeyDown}
-                onBlur={() => void saveEditDescription()}
-                disabled={savingDescription}
-                placeholder="Add a description… (markdown supported, ⌘↵ to save)"
-              />
-              {savingDescription && (
-                <span className="loading loading-spinner loading-xs text-base-content/40 mt-1" />
-              )}
-            </div>
-          ) : (
-            <div className="mt-3 group/description">
-              {property.description ? (
-                <div className="flex items-start gap-2">
-                  <div className="text-sm text-base-content/70 max-w-2xl [&_p]:mb-2 [&_h1]:font-bold [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:underline [&_strong]:font-semibold [&_em]:italic">
-                    <ReactMarkdown>{property.description}</ReactMarkdown>
+            {/* Description */}
+            {editingDescription ? (
+              <div className="mt-3 max-w-2xl">
+                <textarea
+                  ref={descriptionInputRef}
+                  className="textarea textarea-bordered w-full text-sm min-h-24 resize-y"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  onKeyDown={handleDescriptionKeyDown}
+                  onBlur={() => void saveEditDescription()}
+                  disabled={savingDescription}
+                  placeholder="Add a description… (markdown supported, ⌘↵ to save)"
+                />
+                {savingDescription && (
+                  <span className="loading loading-spinner loading-xs text-base-content/40 mt-1" />
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 group/description">
+                {property.description ? (
+                  <div className="flex items-start gap-2">
+                    <div className="text-sm text-base-content/70 max-w-2xl [&_p]:mb-2 [&_h1]:font-bold [&_h2]:font-semibold [&_h3]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:underline [&_strong]:font-semibold [&_em]:italic">
+                      <ReactMarkdown>{property.description}</ReactMarkdown>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={startEditDescription}
+                      className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/description:opacity-100 transition-opacity shrink-0 mt-0.5"
+                      title="Edit description"
+                    >
+                      <Pencil size={11} />
+                    </button>
                   </div>
+                ) : (
                   <button
                     type="button"
                     onClick={startEditDescription}
-                    className="btn btn-ghost btn-xs btn-circle opacity-0 group-hover/description:opacity-100 transition-opacity shrink-0 mt-0.5"
-                    title="Edit description"
+                    className="text-sm text-base-content/30 italic hover:text-base-content/50 transition-colors"
                   >
-                    <Pencil size={11} />
+                    Add a description…
                   </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startEditDescription}
-                  className="text-sm text-base-content/30 italic hover:text-base-content/50 transition-colors"
-                >
-                  Add a description…
-                </button>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Generate button */}
+          <button
+            type="button"
+            className="btn btn-primary shrink-0"
+            onClick={() => setWizardOpen(true)}
+            disabled={uploadedRooms.length === 0}
+            title={uploadedRooms.length === 0 ? "Upload at least one room to generate" : undefined}
+          >
+            <Sparkles size={16} />
+            Generate
+          </button>
         </div>
 
         {/* Rooms */}
@@ -305,55 +296,27 @@ export function PropertyDetailPage() {
           <RoomUploader
             propertyId={property.id}
             onRoomAdded={handleRoomAdded}
+            onRoomClick={setSelectedRoom}
             initialRooms={property.rooms}
           />
         </section>
-
-        {/* Styles */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">Design Styles</h2>
-          <StylePicker
-            selectedIds={selectedStyleIds}
-            onChange={setSelectedStyleIds}
-          />
-        </section>
-
-        {/* Generate */}
-        <section>
-          {generateError && (
-            <div className="alert alert-error mb-3">
-              <span>{generateError}</span>
-            </div>
-          )}
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleGenerate}
-            disabled={!canGenerate || generating}
-          >
-            {generating ? (
-              <>
-                <span className="loading loading-spinner loading-sm" />
-                Generating…
-              </>
-            ) : (
-              "Generate designs"
-            )}
-          </button>
-          {!canGenerate && (
-            <p className="text-sm text-base-content/50 mt-2">
-              Upload at least one room and select at least one style to
-              generate.
-            </p>
-          )}
-        </section>
-
-        {/* Gallery */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">Generated designs</h2>
-          <GenerationGallery propertyId={property.id} />
-        </section>
       </main>
+
+      {/* Room images modal */}
+      <RoomImagesModal
+        room={selectedRoom}
+        propertyId={property.id}
+        onClose={() => setSelectedRoom(null)}
+      />
+
+      {/* Generate wizard modal */}
+      {wizardOpen && (
+        <GenerateWizardModal
+          propertyId={property.id}
+          rooms={rooms}
+          onClose={() => setWizardOpen(false)}
+        />
+      )}
     </div>
   );
 }

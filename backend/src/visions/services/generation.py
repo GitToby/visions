@@ -1,12 +1,17 @@
 """Orchestrates batch generation jobs: room x style → Gemini → Supabase Storage."""
 
+import asyncio
 import uuid
+from datetime import UTC, datetime
+from io import BytesIO
 
+from fastapi import UploadFile
 from loguru import logger
 from pydantic_ai.messages import ImageUrl
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from visions.core.db import async_session_factory
 from visions.models import BUILTIN_STYLES_KV, GenerationJob, Room, User
 from visions.services import ai
 
@@ -44,19 +49,41 @@ async def create_jobs(
 
 
 async def submit_job(db: AsyncSession, job: GenerationJob):
+    logger.debug(f"Submitting job | room_id={job.room_id} style={job.style}")
     room = await db.get(Room, job.room_id)
     if room is None:
         raise ValueError(f"Room {job.room_id} not found")
+
     img_url = await room.get_image_url()
     if not img_url:
+        logger.warning(f"Room {job.room_id} has no image URL")
         raise ValueError(f"Room {job.room_id} has no image URL")
         # fail gen job and return None
-    img_url_ = ImageUrl(url=img_url)
 
+    img_url_ = ImageUrl(url=img_url)
     style = BUILTIN_STYLES_KV[job.style]
-    prompt = ai.system_prompt(style.name, style.description)
+    prompt = ai.system_prompt(style.name, style.description, extra_context=job.extra_context)
 
     # https://ai.pydantic.dev/input/
-    _ = ai.agent.run_sync([prompt, img_url_])
-    # upload binary result to the job bucket path
-    # return url
+    resp = await ai.agent.run([prompt, img_url_])
+
+    job.completed_at = datetime.now(UTC)
+    logger.debug(f"Job completed | room_id={job.room_id} style={job.style}")
+    await job.upload_image(BytesIO(resp.output.data))
+    logger.debug(f"Upload completed | room_id={job.room_id} style={job.style}")
+    return job
+
+
+async def main():
+    q = select(GenerationJob).where(GenerationJob.completed_at == None)
+    async with async_session_factory() as session:
+        jobs = await session.exec(q)
+        for job in jobs:
+            print(job)
+            await submit_job(session, job)
+            break
+        await session.commit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

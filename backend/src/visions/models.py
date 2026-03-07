@@ -3,7 +3,8 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from io import BytesIO
-from typing import override
+from pathlib import Path
+from typing import BinaryIO, override
 
 from fastapi import UploadFile
 from fastapi.datastructures import Headers
@@ -92,10 +93,10 @@ class FileStoreMixin(ABC):
             return storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
         return None
 
-    async def upload_image(self, image: UploadFile) -> None:
+    async def upload_image(self, image: BinaryIO) -> None:
         """Upload the image to S3"""
 
-        with Image.open(image.file) as img:
+        with Image.open(image) as img:  # failed here
             # todo: make all images below a specific size
             _bytes = BytesIO()
             img.save(_bytes, format="WebP")
@@ -143,7 +144,7 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
 
     id: uuid.UUID = Field(primary_key=True)
 
-    propertys: list[Property] = Relationship(back_populates="owner")
+    properties: list[Property] = Relationship(back_populates="owner")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -190,7 +191,7 @@ class PropertyUpdate(SQLModel):
 class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
 
-    owner: User = Relationship(back_populates="propertys")
+    owner: User = Relationship(back_populates="properties")
     rooms: list[Room] = Relationship(back_populates="property")
 
     async def to_response(self) -> PropertyResponse:
@@ -221,7 +222,7 @@ class PropertyResponse(BaseModel):
 
 # ─── Room ─────────────────────────────────────────────────────────────────────
 # A room belongs to a property, and has a label; this is its unique identifier.
-# Rooms are immutible when created - but their image can be uploaded multiple times.
+# Rooms are immutable when created - but their image can be uploaded multiple times.
 # Delete a room will delete all its images.
 
 
@@ -307,6 +308,7 @@ class GenerationJobBase(SQLModel):
 class GenerationJobCreate(SQLModel):
     room_id: uuid.UUID
     style: str
+    extra_context: str | None = None
 
 
 class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True):
@@ -316,6 +318,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
     room_id: uuid.UUID = Field(foreign_key="room.id", index=True)
     style: str = Field(index=True)
 
+    extra_context: str | None = None
     error_message: str | None = None
     completed_at: datetime | None = Field(default=None, sa_type=TIMESTAMP)
 
@@ -326,12 +329,12 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
 
     room: Room = Relationship(back_populates="generation_jobs")
 
-    def to_response(self) -> GenerationJobResponse:
+    async def to_response(self) -> GenerationJobResponse:
         return GenerationJobResponse(
             id=self.id,
             room_id=self.room_id,
             style=self.style,
-            image_key=self.image_key,
+            image_url=await self.get_image_url(),
             error_message=self.error_message,
             completed_at=self.completed_at,
             created_at=self.created_at,
@@ -345,7 +348,7 @@ class GenerationJobResponse(BaseModel):
     id: uuid.UUID
     room_id: uuid.UUID
     style: str
-    image_key: str | None
+    image_url: str | None
     error_message: str | None
     completed_at: datetime | None
     created_at: datetime
@@ -357,55 +360,84 @@ class GenerationJobResponse(BaseModel):
 # that can be used to generate new rooms from property rooms.
 # for now this is not a table and isnt user creatable
 
+_STATIC_STYLES_DIR = Path(__file__).parent / "static" / "styles"
+
+
+def _build_image_urls(slug: str) -> dict[str, str]:
+    """Scans the static styles directory and returns {room_name: url} for the given slug."""
+    style_dir = _STATIC_STYLES_DIR / slug
+    if not style_dir.is_dir():
+        return {}
+    base = SETTINGS.api_base_url.rstrip("/")
+    return {
+        p.stem: f"{base}/static/styles/{slug}/{p.name}"
+        for p in sorted(style_dir.iterdir())
+        if p.suffix == ".webp"
+    }
+
 
 class DesignStyle(BaseModel):
     name: str
+    slug: str
     description: str
+    image_urls: dict[str, str]
 
 
 BUILTIN_STYLES: list[DesignStyle] = [
     DesignStyle(
         name="Japandi",
+        slug="japandi",
         description=(
             "A harmonious blend of Japanese minimalism and Scandinavian functionality. "
             "Neutral tones, natural materials (oak, rattan, linen), clean lines, and an "
             "emphasis on craftsmanship and negative space."
         ),
+        image_urls=_build_image_urls("japandi"),
     ),
     DesignStyle(
         name="Industrial",
+        slug="industrial",
         description=(
             "Raw, unfinished aesthetics inspired by urban lofts. Exposed brick, concrete, "
             "steel beams, Edison bulbs, and reclaimed wood. Dark palette with metallic accents."
         ),
+        image_urls=_build_image_urls("industrial"),
     ),
     DesignStyle(
         name="Mid-Century Modern",
+        slug="mid-century",
         description=(
             "1950s-60s American design: organic shapes, tapered legs, bold accent colours, "
             "and a mix of natural and manufactured materials. Think Eames chairs and sunburst clocks."
         ),
+        image_urls=_build_image_urls("mid-century"),
     ),
     DesignStyle(
         name="Coastal",
+        slug="coastal",
         description=(
             "Light, airy interiors evoking a beachside retreat. White and sand tones, "
             "weathered wood, wicker, jute, and ocean-blue accents. Natural light is central."
         ),
+        image_urls=_build_image_urls("coastal"),
     ),
     DesignStyle(
         name="Maximalist",
+        slug="maximalist",
         description=(
             "More is more. Layered patterns, rich jewel tones, eclectic art, global "
             "textiles, and abundant plants. Every surface tells a story."
         ),
+        image_urls=_build_image_urls("maximalist"),
     ),
     DesignStyle(
         name="Biophilic",
+        slug="biophilic",
         description=(
             "Design that brings nature indoors. Living walls, abundant propertyplants, natural "
             "stone, wood, water features, and large windows for natural light and views."
         ),
+        image_urls=_build_image_urls("biophilic"),
     ),
 ]
 

@@ -104,7 +104,7 @@ async def test_upload_image_converts_to_webp_and_uploads(store: ConcreteStore):
     upload = _make_upload_file("PNG")
 
     with patch("visions.models.storage.upload_file") as mock_upload:
-        await store.upload_image(upload)
+        await store.upload_image(upload.file)
 
     mock_upload.assert_called_once()
     _, kwargs = mock_upload.call_args
@@ -124,7 +124,7 @@ async def test_upload_image_accepts_jpeg_input(store: ConcreteStore):
     upload = _make_upload_file("JPEG")
 
     with patch("visions.models.storage.upload_file") as mock_upload:
-        await store.upload_image(upload)
+        await store.upload_image(upload.file)
 
     uploaded: UploadFile = mock_upload.call_args.args[0]
     uploaded.file.seek(0)
