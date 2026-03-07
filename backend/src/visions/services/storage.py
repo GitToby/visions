@@ -1,16 +1,18 @@
 """S3-compatible file service"""
 
 import boto3
-import httpx
 from botocore.exceptions import ClientError
 from fastapi import HTTPException, status
 from fastapi.datastructures import UploadFile
 from loguru import logger
+from supabase import create_client
 
 from visions.core.config import SETTINGS
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
+
+_supabase = create_client(SETTINGS.supabase_url, SETTINGS.supabase_secret_key.get_secret_value())
 
 _s3 = boto3.client(
     "s3",
@@ -47,21 +49,21 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
 
 
 def s3_presigned_url(*, bucket: str, key: str):
-    """Generate a presigned URL for an S3 object."""
+    """
+    Generate a signed URL via the Supabase Storage SDK.
+    
+    supabase dosent like the s3 presigned format so wew have to use the client.
+    """
     logger.debug(f"Generating presigned URL | {bucket}/{key}")
     try:
-        url = _s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=SIGNED_URL_EXPIRES,
-        )
-    except ClientError as exc:
+        result = _supabase.storage.from_(bucket).create_signed_url(key, SIGNED_URL_EXPIRES)
+        return result["signedURL"]
+    except Exception as exc:
         logger.error("Presigned URL generation failed | key={} error={}", key, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Could not generate image URL",
         ) from exc
-    return url
 
 
 def download_file(*, bucket: str, key: str) -> bytes:
@@ -79,3 +81,5 @@ def download_file(*, bucket: str, key: str) -> bytes:
         ) from exc
     logger.debug("Image downloaded | key={} size={:.1f}KB", key, len(data) / 1024)
     return data
+
+
