@@ -9,7 +9,6 @@ import {
   type LucideIcon,
   Monitor,
   Plus,
-  RefreshCw,
   Sofa,
   Trash2,
   Upload,
@@ -283,27 +282,14 @@ function RoomSlot({
           {!isBusy && (
             <span className="text-xs text-base-content/40 flex items-center gap-0.5">
               {state.status === "uploaded" || state.status === "no-image" ? (
-                <>
-                  <button
-                    type="button"
-                    className="btn btn-xs btn-ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      inputRef.current?.click();
-                    }}
-                  >
-                    <RefreshCw size={11} />
-                    Replace
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="btn btn-xs btn-ghost hover:text-error"
-                    title="Delete room"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="btn btn-xs btn-ghost hover:text-error"
+                  title="Delete room"
+                >
+                  <Trash2 size={11} />
+                </button>
               ) : (
                 <>
                   <Upload size={11} />

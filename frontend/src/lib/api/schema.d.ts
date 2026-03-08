@@ -357,6 +357,8 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
+            /** Generation Jobs */
+            generation_jobs: components["schemas"]["GenerationJobResponse"][];
         };
         /** UserResponse */
         UserResponse: {

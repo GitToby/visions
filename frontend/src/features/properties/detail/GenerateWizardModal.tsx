@@ -10,26 +10,46 @@ type RoomResponse = components["schemas"]["RoomResponse"];
 interface GenerateWizardModalProps {
   propertyId: string;
   rooms: RoomResponse[];
+  /** If set, wizard is in single-room mode — only this room is used */
+  preselectedRoomId?: string;
+  /** If set, shown as the base image (for "continue from here" flows) */
+  baseImageUrl?: string;
+  /** If set, this style is pre-selected (for "continue from here" flows) */
+  preselectedStyleId?: string;
   onClose: () => void;
 }
 
 export function GenerateWizardModal({
   propertyId,
   rooms,
+  preselectedRoomId,
+  baseImageUrl,
+  preselectedStyleId,
   onClose,
 }: GenerateWizardModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([]);
+  const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>(() =>
+    preselectedStyleId ? [preselectedStyleId] : []
+  );
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [extraContext, setExtraContext] = useState("");
   const queryClient = useQueryClient();
 
+  const isSingleRoomMode = !!preselectedRoomId;
+
   const uploadedRooms = rooms.filter((r) => r.image_url);
-  const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(
-    () => new Set(uploadedRooms.map((r) => r.id))
-  );
+
+  // In single-room mode the room is locked; in global mode all rooms start selected
+  const [selectedRoomIds, setSelectedRoomIds] = useState<Set<string>>(() => {
+    if (isSingleRoomMode) {
+      return new Set(preselectedRoomId ? [preselectedRoomId] : []);
+    }
+    return new Set(uploadedRooms.map((r) => r.id));
+  });
 
   const toggleRoom = (id: string) => {
+    if (isSingleRoomMode) return; // locked
     setSelectedRoomIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -50,8 +70,13 @@ export function GenerateWizardModal({
       return;
     setGenerating(true);
     setError(null);
+    const context = extraContext.trim() || undefined;
     const jobs = chosenRooms.flatMap((r) =>
-      selectedStyleIds.map((style) => ({ room_id: r.id, style }))
+      selectedStyleIds.map((style) => ({
+        room_id: r.id,
+        style,
+        ...(context ? { extra_context: context } : {}),
+      }))
     );
     const results = await Promise.all(
       jobs.map((body) => apiClient.POST("/generation", { body }))
@@ -71,6 +96,10 @@ export function GenerateWizardModal({
   const handleClose = () => {
     if (!generating) onClose();
   };
+
+  const lockedRoom = isSingleRoomMode
+    ? uploadedRooms.find((r) => r.id === preselectedRoomId)
+    : null;
 
   return (
     <dialog
@@ -139,17 +168,63 @@ export function GenerateWizardModal({
         {step === 2 && (
           <>
             <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
+              {/* Base image (continue from here) */}
+              {baseImageUrl && (
+                <div>
+                  <p className="text-xs text-base-content/50 uppercase tracking-wide font-medium mb-2">
+                    Base image
+                  </p>
+                  <div className="flex gap-4 items-start">
+                    <div className="w-32 rounded-box overflow-hidden border border-base-200 shadow-sm shrink-0">
+                      <img
+                        src={baseImageUrl}
+                        alt="Base vision"
+                        className="w-full aspect-square object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 pt-1">
+                      <p className="text-xs text-base-content/60 mb-2">
+                        New visions will continue from this design.
+                      </p>
+                      <input
+                        type="text"
+                        className="input input-sm input-bordered w-full"
+                        placeholder="Add refinement notes (optional)…"
+                        value={extraContext}
+                        onChange={(e) => setExtraContext(e.target.value)}
+                        disabled={generating}
+                        maxLength={300}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
-                {/* Rooms — toggleable */}
+                {/* Rooms */}
                 <div className="bg-base-200 rounded-box p-4">
                   <p className="text-xs text-base-content/50 uppercase tracking-wide font-medium mb-3">
                     Rooms
                   </p>
-                  {uploadedRooms.length === 0 ? (
+                  {isSingleRoomMode ? (
+                    /* Single-room mode: locked display */
+                    lockedRoom ? (
+                      <div className="flex items-center gap-2">
+                        <span className="badge badge-primary badge-sm">
+                          {lockedRoom.label}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-base-content/40 italic">
+                        Room not found
+                      </p>
+                    )
+                  ) : uploadedRooms.length === 0 ? (
                     <p className="text-sm text-base-content/40 italic">
                       No rooms uploaded
                     </p>
                   ) : (
+                    /* Global mode: selectable rooms */
                     <ul className="space-y-2">
                       {uploadedRooms.map((r) => {
                         const on = selectedRoomIds.has(r.id);
@@ -196,7 +271,7 @@ export function GenerateWizardModal({
                 <span className="text-sm">
                   This will create{" "}
                   <strong>
-                    {totalGenerations} generation
+                    {totalGenerations} vision
                     {totalGenerations !== 1 ? "s" : ""}
                   </strong>{" "}
                   ({chosenRooms.length} room
@@ -236,7 +311,8 @@ export function GenerateWizardModal({
                 ) : (
                   <>
                     <Sparkles size={14} />
-                    Generate
+                    Generate {totalGenerations > 0 ? totalGenerations : ""}{" "}
+                    {totalGenerations === 1 ? "Vision" : "Visions"}
                   </>
                 )}
               </button>

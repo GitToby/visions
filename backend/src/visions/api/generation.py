@@ -35,7 +35,7 @@ async def start_generation_for_room(
     await db.commit()
     await db.refresh(job)
 
-    background_tasks.add_task(generation_service.submit_job, db, job)
+    background_tasks.add_task(generation_service.submit_job, job.id)
     return [await job.to_response()]
 
 

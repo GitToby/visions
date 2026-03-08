@@ -51,9 +51,3 @@ app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 @app.get("/health", tags=["meta"])
 async def health() -> dict:
     return {"status": "ok"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("visions.main:app", host="0.0.0.0", port=8000, reload=True)

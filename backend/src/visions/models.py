@@ -270,7 +270,10 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
         return f"rooms/{self.id}"
 
     property: Property = Relationship(back_populates="rooms")
-    generation_jobs: list[GenerationJob] = Relationship(back_populates="room")
+    generation_jobs: list[GenerationJob] = Relationship(
+        back_populates="room",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
 
     async def to_response(self) -> RoomResponse:
         return RoomResponse(
@@ -280,6 +283,9 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
             image_url=await self.get_image_url(),
             created_at=self.created_at,
             updated_at=self.updated_at,
+            generation_jobs=await asyncio.gather(
+                *[job.to_response() for job in self.generation_jobs]
+            ),
         )
 
 
@@ -294,6 +300,7 @@ class RoomResponse(BaseModel):
     image_url: str | None
     created_at: datetime
     updated_at: datetime | None
+    generation_jobs: list[GenerationJobResponse]
 
 
 # ─── Generation job ───────────────────────────────────────────────────────────

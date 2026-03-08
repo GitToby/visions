@@ -2,10 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MapPin, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { GenerateWizardModal } from "../features/properties/detail/GenerateWizardModal";
-import { RoomImagesModal } from "../features/properties/detail/RoomImagesModal";
 import { RoomUploader } from "../features/properties/detail/RoomUploader";
 import { apiClient, useProperty } from "../lib/api/hooks";
 import type { components } from "../lib/api/schema";
@@ -14,11 +13,11 @@ type RoomResponse = components["schemas"]["RoomResponse"];
 
 export function PropertyDetailPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
+  const navigate = useNavigate();
   const { data: property, isLoading, error } = useProperty(propertyId ?? "");
   const queryClient = useQueryClient();
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<RoomResponse | null>(null);
 
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState("");
@@ -302,7 +301,7 @@ export function PropertyDetailPage() {
             )}
           </div>
 
-          {/* Generate button */}
+          {/* Reimagine Property button */}
           <button
             type="button"
             className="btn btn-primary shrink-0"
@@ -315,7 +314,7 @@ export function PropertyDetailPage() {
             }
           >
             <Sparkles size={16} />
-            Generate
+            Reimagine Property
           </button>
         </div>
 
@@ -325,18 +324,13 @@ export function PropertyDetailPage() {
           <RoomUploader
             propertyId={property.id}
             onRoomAdded={handleRoomAdded}
-            onRoomClick={setSelectedRoom}
+            onRoomClick={(room) =>
+              navigate(`/properties/${property.id}/room/${room.id}`)
+            }
             initialRooms={property.rooms}
           />
         </section>
       </main>
-
-      {/* Room images modal */}
-      <RoomImagesModal
-        room={selectedRoom}
-        propertyId={property.id}
-        onClose={() => setSelectedRoom(null)}
-      />
 
       {/* Generate wizard modal */}
       {wizardOpen && (

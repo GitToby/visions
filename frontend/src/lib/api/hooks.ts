@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import createClient, { type Middleware } from "openapi-fetch";
 import config from "../config";
 import { supabase } from "../supabase";
-import type { paths } from "./schema";
+import type { components, paths } from "./schema";
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -42,7 +42,14 @@ export function useProperties() {
   });
 }
 
-export function useProperty(propertyId: string) {
+type PropertyResponse = components["schemas"]["PropertyResponse"];
+
+export function useProperty(
+  propertyId: string,
+  opts?: {
+    refetchInterval?: (data: PropertyResponse | undefined) => number | false;
+  }
+) {
   return useQuery({
     queryKey: ["get", "/properties/{property_id}", propertyId],
     queryFn: async () => {
@@ -53,6 +60,9 @@ export function useProperty(propertyId: string) {
       return data;
     },
     enabled: !!propertyId,
+    refetchInterval: opts?.refetchInterval
+      ? (query) => opts.refetchInterval!(query.state.data)
+      : undefined,
   });
 }
 
@@ -79,5 +89,11 @@ export function useGenerations(propertyId: string) {
       return data;
     },
     enabled: !!propertyId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+      const hasPending = data.some((j) => !j.completed_at && !j.error_message);
+      return hasPending ? 5000 : false;
+    },
   });
 }
