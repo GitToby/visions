@@ -17,6 +17,4 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
         yield session
 
 
-
-
 DBSession = Annotated[AsyncSession, Depends(get_session)]

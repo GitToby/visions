@@ -73,7 +73,7 @@ export function useGenerations(propertyId: string) {
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
         "/generation/property/{property_id}",
-        { params: { path: { property_id: propertyId } } },
+        { params: { path: { property_id: propertyId } } }
       );
       if (error) throw error;
       return data;

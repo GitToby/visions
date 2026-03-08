@@ -1,6 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { apiClient, useGenerations } from "../../../lib/api/hooks";
 import type { components } from "../../../lib/api/schema";
 
@@ -26,7 +26,11 @@ function ImageWithExternalLink({
 }) {
   return (
     <div className="relative group">
-      <img src={src} alt={alt} className={className ?? "w-full h-full object-cover"} />
+      <img
+        src={src}
+        alt={alt}
+        className={className ?? "w-full h-full object-cover"}
+      />
       <a
         href={src}
         target="_blank"
@@ -46,7 +50,11 @@ interface RoomImagesModalProps {
   onClose: () => void;
 }
 
-export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalProps) {
+export function RoomImagesModal({
+  room,
+  propertyId,
+  onClose,
+}: RoomImagesModalProps) {
   const { data: jobs } = useGenerations(propertyId);
   const queryClient = useQueryClient();
   const [refiningStyle, setRefiningStyle] = useState<string | null>(null);
@@ -93,7 +101,9 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
   return (
     <dialog
       className="modal modal-open"
-      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
     >
       <div className="modal-box max-w-5xl max-h-[90vh] overflow-y-auto p-0">
         {/* Header */}
@@ -115,7 +125,7 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
               <p className="text-xs text-base-content/40 uppercase tracking-wide font-medium mb-2">
                 Original
               </p>
-              <div className="w-72 rounded-xl overflow-hidden border border-base-200 shadow-sm">
+              <div className="w-72 rounded-box overflow-hidden border border-base-200 shadow-sm">
                 <ImageWithExternalLink
                   src={room.image_url}
                   alt={room.label}
@@ -133,7 +143,8 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
 
             {roomJobs.length === 0 ? (
               <p className="text-sm text-base-content/40 italic">
-                No designs yet. Use the Generate button to create designs for this room.
+                No designs yet. Use the Generate button to create designs for
+                this room.
               </p>
             ) : (
               <div className="space-y-8">
@@ -145,7 +156,9 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
                       <div className="flex items-center gap-1.5 text-xs text-base-content/40 font-medium">
                         <span className="text-base-content/60">Room</span>
                         <ArrowRight size={12} />
-                        <span className="text-primary font-semibold">{style}</span>
+                        <span className="text-primary font-semibold">
+                          {style}
+                        </span>
                         <ArrowRight size={12} />
                         <span className="text-base-content/60">Generated</span>
                       </div>
@@ -159,7 +172,7 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
                         return (
                           <div
                             key={job.id}
-                            className="rounded-xl overflow-hidden border border-base-200 shadow-sm"
+                            className="rounded-box overflow-hidden border border-base-200 shadow-sm"
                           >
                             <div className="relative aspect-square bg-base-200">
                               {status === "pending" && (
@@ -195,11 +208,12 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
                                   </span>
                                 )}
                                 {status === "failed" && (
-                                  <span className="badge badge-xs badge-error">Failed</span>
+                                  <span className="badge badge-xs badge-error">
+                                    Failed
+                                  </span>
                                 )}
                               </div>
                             </div>
-
                           </div>
                         );
                       })}
@@ -263,7 +277,7 @@ export function RoomImagesModal({ room, propertyId, onClose }: RoomImagesModalPr
           </div>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose} />
+      <button type="button" className="modal-backdrop" onClick={onClose} />
     </dialog>
   );
 }

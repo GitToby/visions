@@ -17,7 +17,7 @@ export function Navbar() {
             <button
               type="button"
               tabIndex={0}
-              className="btn btn-ghost btn-circle avatar placeholder"
+              className="btn btn-ghost btn-circle avatar avatar-placeholder"
             >
               <div className="bg-neutral text-neutral-content w-10 rounded-full">
                 <span className="text-sm font-medium">

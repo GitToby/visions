@@ -13,7 +13,11 @@ interface GenerateWizardModalProps {
   onClose: () => void;
 }
 
-export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWizardModalProps) {
+export function GenerateWizardModal({
+  propertyId,
+  rooms,
+  onClose,
+}: GenerateWizardModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -38,7 +42,12 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
   const totalGenerations = chosenRooms.length * selectedStyleIds.length;
 
   const handleGenerate = async () => {
-    if (!propertyId || chosenRooms.length === 0 || selectedStyleIds.length === 0) return;
+    if (
+      !propertyId ||
+      chosenRooms.length === 0 ||
+      selectedStyleIds.length === 0
+    )
+      return;
     setGenerating(true);
     setError(null);
     const jobs = chosenRooms.flatMap((r) =>
@@ -66,7 +75,9 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
   return (
     <dialog
       className="modal modal-open"
-      onKeyDown={(e) => { if (e.key === "Escape") handleClose(); }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") handleClose();
+      }}
     >
       <div className="modal-box max-w-4xl max-h-[85vh] flex flex-col">
         {/* Header */}
@@ -89,7 +100,9 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
 
         {/* Step indicator */}
         <ul className="steps steps-horizontal w-full mb-5 text-xs shrink-0">
-          <li className={`step ${step >= 1 ? "step-primary" : ""}`}>Choose styles</li>
+          <li className={`step ${step >= 1 ? "step-primary" : ""}`}>
+            Choose styles
+          </li>
           <li className={`step ${step >= 2 ? "step-primary" : ""}`}>Confirm</li>
         </ul>
 
@@ -97,10 +110,17 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
         {step === 1 && (
           <>
             <div className="overflow-y-auto flex-1 min-h-0">
-              <StylePicker selectedIds={selectedStyleIds} onChange={setSelectedStyleIds} />
+              <StylePicker
+                selectedIds={selectedStyleIds}
+                onChange={setSelectedStyleIds}
+              />
             </div>
             <div className="modal-action shrink-0 mt-4">
-              <button type="button" className="btn btn-ghost" onClick={handleClose}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleClose}
+              >
                 Cancel
               </button>
               <button
@@ -126,7 +146,9 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
                     Rooms
                   </p>
                   {uploadedRooms.length === 0 ? (
-                    <p className="text-sm text-base-content/40 italic">No rooms uploaded</p>
+                    <p className="text-sm text-base-content/40 italic">
+                      No rooms uploaded
+                    </p>
                   ) : (
                     <ul className="space-y-2">
                       {uploadedRooms.map((r) => {
@@ -141,7 +163,9 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
                                 onChange={() => toggleRoom(r.id)}
                                 disabled={generating}
                               />
-                              <span className={`text-sm ${on ? "" : "text-base-content/40 line-through"}`}>
+                              <span
+                                className={`text-sm ${on ? "" : "text-base-content/40 line-through"}`}
+                              >
                                 {r.label}
                               </span>
                             </label>
@@ -159,7 +183,9 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
                   </p>
                   <ul className="space-y-1">
                     {selectedStyleIds.map((s) => (
-                      <li key={s} className="text-sm">{s}</li>
+                      <li key={s} className="text-sm">
+                        {s}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -169,9 +195,14 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
                 <Sparkles size={16} />
                 <span className="text-sm">
                   This will create{" "}
-                  <strong>{totalGenerations} generation{totalGenerations !== 1 ? "s" : ""}</strong>
-                  {" "}({chosenRooms.length} room{chosenRooms.length !== 1 ? "s" : ""} ×{" "}
-                  {selectedStyleIds.length} style{selectedStyleIds.length !== 1 ? "s" : ""})
+                  <strong>
+                    {totalGenerations} generation
+                    {totalGenerations !== 1 ? "s" : ""}
+                  </strong>{" "}
+                  ({chosenRooms.length} room
+                  {chosenRooms.length !== 1 ? "s" : ""} ×{" "}
+                  {selectedStyleIds.length} style
+                  {selectedStyleIds.length !== 1 ? "s" : ""})
                 </span>
               </div>
 
@@ -213,7 +244,7 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
           </>
         )}
       </div>
-      <div className="modal-backdrop" onClick={handleClose} />
+      <button type="button" className="modal-backdrop" onClick={handleClose} />
     </dialog>
   );
 }

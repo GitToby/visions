@@ -25,7 +25,7 @@ function StyleCarousel({ style }: { style: DesignStyle }) {
             <img
               src={url}
               alt={`${style.name} – ${room}`}
-              className="w-full h-full object-cover rounded-2xl shadow-2xl"
+              className="w-full h-full object-cover"
             />
           </div>
         ))}
@@ -70,10 +70,11 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
       {styles.map((style) => {
         const selected = selectedIds.includes(style.name);
         return (
-          <div
+          <button
             key={style.name}
+            type="button"
             onClick={() => toggle(style.name)}
-            className={`card bg-base-100 card-border cursor-pointer transition-all hover:shadow-md ${
+            className={`card bg-base-100 card-border cursor-pointer transition-all hover:shadow-md text-left ${
               selected ? "ring-2 ring-primary border-primary" : ""
             }`}
           >
@@ -89,7 +90,7 @@ export function StylePicker({ selectedIds, onChange }: StylePickerProps) {
                 {style.description}
               </p>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

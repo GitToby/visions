@@ -40,7 +40,7 @@ export function LandingPage() {
           {/* Before / After mockup */}
           <div className="relative hidden lg:flex gap-3 items-end">
             {/* Before card */}
-            <div className="flex-1 rounded-2xl overflow-hidden shadow-lg border border-base-300">
+            <div className="flex-1 rounded-box overflow-hidden shadow-lg border border-base-300">
               <div className="aspect-4/3 bg-linear-to-br from-base-300 to-base-200 flex items-end">
                 <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
                   <span className="badge badge-neutral badge-sm">Before</span>
@@ -57,7 +57,7 @@ export function LandingPage() {
             </div>
 
             {/* After card */}
-            <div className="flex-1 rounded-2xl overflow-hidden shadow-xl border border-primary/30 ring-2 ring-primary/20">
+            <div className="flex-1 rounded-box overflow-hidden shadow-xl border border-primary/30 ring-2 ring-primary/20">
               <div className="aspect-4/3 bg-linear-to-br from-primary/30 to-secondary/20 flex items-end">
                 <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
                   <span className="badge badge-primary badge-sm">After</span>
@@ -99,7 +99,9 @@ export function LandingPage() {
             <div className="card bg-base-100 shadow-sm">
               <div className="card-body items-center text-center gap-2">
                 <div className="badge badge-primary badge-lg">3</div>
-                <h3 className="card-title text-base">Pick a style & generate</h3>
+                <h3 className="card-title text-base">
+                  Pick a style & generate
+                </h3>
                 <p className="text-sm text-base-content/60">
                   Choose from curated design styles and get AI-rendered results
                   in seconds.

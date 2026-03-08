@@ -5,7 +5,6 @@ import uuid
 from datetime import UTC, datetime
 from io import BytesIO
 
-from fastapi import UploadFile
 from loguru import logger
 from pydantic_ai.messages import ImageUrl
 from sqlmodel import select
@@ -75,7 +74,7 @@ async def submit_job(db: AsyncSession, job: GenerationJob):
 
 
 async def main_genjob_rec():
-    q = select(GenerationJob).where(GenerationJob.completed_at == None)
+    q = select(GenerationJob).where(GenerationJob.completed_at == None)  # noqa E711
     async with async_session_factory() as session:
         jobs = await session.exec(q)
         await asyncio.gather(*[submit_job(session, job) for job in jobs])

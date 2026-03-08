@@ -96,7 +96,7 @@ function RoomSlot({
       onStateChange({ status: "empty" });
       onDelete?.(label);
     },
-    [state, propertyId, label, onStateChange, onDelete],
+    [state, propertyId, label, onStateChange, onDelete]
   );
 
   const handleFile = useCallback(
@@ -115,7 +115,9 @@ function RoomSlot({
 
       const { data, error } = existingRoomId
         ? await apiClient.PUT("/properties/{property_id}/rooms/{room_id}", {
-            params: { path: { property_id: propertyId, room_id: existingRoomId } },
+            params: {
+              path: { property_id: propertyId, room_id: existingRoomId },
+            },
             body: { image: file as unknown as string, label },
             bodySerializer: () => formData,
           })
@@ -137,7 +139,7 @@ function RoomSlot({
       onStateChange({ status: "uploaded", room: data, preview });
       onRoomAdded(data);
     },
-    [label, propertyId, state, onStateChange, onRoomAdded],
+    [label, propertyId, state, onStateChange, onRoomAdded]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +152,7 @@ function RoomSlot({
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) void handleFile(file);
+    if (file?.type.startsWith("image/")) void handleFile(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -285,7 +287,10 @@ function RoomSlot({
                   <button
                     type="button"
                     className="btn btn-xs btn-ghost"
-                    onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      inputRef.current?.click();
+                    }}
                   >
                     <RefreshCw size={11} />
                     Replace
@@ -414,9 +419,7 @@ export function RoomUploader({
     return map;
   }, [generations]);
   const [customLabels, setCustomLabels] = useState<string[]>(() =>
-    initialRooms
-      .filter((r) => !DEFAULT_LABELS.has(r.label))
-      .map((r) => r.label),
+    initialRooms.filter((r) => !DEFAULT_LABELS.has(r.label)).map((r) => r.label)
   );
 
   const [slotStates, setSlotStates] = useState<Record<string, SlotState>>(
@@ -425,7 +428,7 @@ export function RoomUploader({
         DEFAULT_ROOM_TYPES.map(({ label }) => [
           label,
           { status: "empty" as const },
-        ]),
+        ])
       );
       for (const room of initialRooms) {
         states[room.label] = room.image_url
@@ -433,7 +436,7 @@ export function RoomUploader({
           : { status: "no-image", room };
       }
       return states;
-    },
+    }
   );
 
   const [toast, setToast] = useState<string | null>(null);
@@ -449,7 +452,7 @@ export function RoomUploader({
     () => () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     },
-    [],
+    []
   );
 
   const handleStateChange = useCallback((label: string, state: SlotState) => {
@@ -510,7 +513,9 @@ export function RoomUploader({
                 onStateChange={(s) => handleStateChange(label, s)}
                 onRoomAdded={onRoomAdded}
                 onRoomClick={onRoomClick}
-                onRemove={isCustom ? () => handleRemoveCustom(label) : undefined}
+                onRemove={
+                  isCustom ? () => handleRemoveCustom(label) : undefined
+                }
                 onDelete={(l) => {
                   if (isCustom) handleRemoveCustom(label);
                   showToast(`${l} deleted`);

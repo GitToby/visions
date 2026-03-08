@@ -130,7 +130,7 @@ export function PropertyDetailPage() {
     void invalidateProperty();
   };
   const handleDescriptionKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    e: React.KeyboardEvent<HTMLTextAreaElement>
   ) => {
     if (e.key === "Escape") cancelEditDescription();
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
@@ -293,7 +293,7 @@ export function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={startEditDescription}
-                    className="text-sm text-base-content/30 italic hover:text-base-content/50 transition-colors"
+                    className="btn btn-ghost btn-sm text-base-content/30 italic font-normal"
                   >
                     Add a description…
                   </button>
