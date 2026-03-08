@@ -41,7 +41,7 @@ export function PropertyDetailPage() {
 
   const invalidateProperty = () =>
     queryClient.invalidateQueries({
-      queryKey: ["get", "/houses/{property_id}", propertyId],
+      queryKey: ["get", "/properties/{property_id}", propertyId],
     });
 
   // Name
@@ -50,12 +50,18 @@ export function PropertyDetailPage() {
     setEditingName(true);
     setTimeout(() => nameInputRef.current?.select(), 0);
   };
-  const cancelEditName = () => { setEditingName(false); setEditName(""); };
+  const cancelEditName = () => {
+    setEditingName(false);
+    setEditName("");
+  };
   const saveEditName = async () => {
     const trimmed = editName.trim();
-    if (!trimmed || !propertyId || trimmed === property?.name) { cancelEditName(); return; }
+    if (!trimmed || !propertyId || trimmed === property?.name) {
+      cancelEditName();
+      return;
+    }
     setSavingName(true);
-    await apiClient.PUT("/houses/{property_id}", {
+    await apiClient.PUT("/properties/{property_id}", {
       params: { path: { property_id: propertyId } },
       body: { name: trimmed },
     });
@@ -74,12 +80,18 @@ export function PropertyDetailPage() {
     setEditingAddress(true);
     setTimeout(() => addressInputRef.current?.select(), 0);
   };
-  const cancelEditAddress = () => { setEditingAddress(false); setEditAddress(""); };
+  const cancelEditAddress = () => {
+    setEditingAddress(false);
+    setEditAddress("");
+  };
   const saveEditAddress = async () => {
     const trimmed = editAddress.trim();
-    if (!propertyId || trimmed === (property?.address ?? "")) { cancelEditAddress(); return; }
+    if (!propertyId || trimmed === (property?.address ?? "")) {
+      cancelEditAddress();
+      return;
+    }
     setSavingAddress(true);
-    await apiClient.PUT("/houses/{property_id}", {
+    await apiClient.PUT("/properties/{property_id}", {
       params: { path: { property_id: propertyId } },
       body: { address: trimmed || null },
     });
@@ -98,12 +110,18 @@ export function PropertyDetailPage() {
     setEditingDescription(true);
     setTimeout(() => descriptionInputRef.current?.focus(), 0);
   };
-  const cancelEditDescription = () => { setEditingDescription(false); setEditDescription(""); };
+  const cancelEditDescription = () => {
+    setEditingDescription(false);
+    setEditDescription("");
+  };
   const saveEditDescription = async () => {
     const trimmed = editDescription.trim();
-    if (!propertyId || trimmed === (property?.description ?? "")) { cancelEditDescription(); return; }
+    if (!propertyId || trimmed === (property?.description ?? "")) {
+      cancelEditDescription();
+      return;
+    }
     setSavingDescription(true);
-    await apiClient.PUT("/houses/{property_id}", {
+    await apiClient.PUT("/properties/{property_id}", {
       params: { path: { property_id: propertyId } },
       body: { description: trimmed || null },
     });
@@ -111,9 +129,12 @@ export function PropertyDetailPage() {
     setEditingDescription(false);
     void invalidateProperty();
   };
-  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleDescriptionKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
     if (e.key === "Escape") cancelEditDescription();
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void saveEditDescription();
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
+      void saveEditDescription();
   };
 
   const handleRoomAdded = (room: RoomResponse) => {
@@ -218,7 +239,11 @@ export function PropertyDetailPage() {
               <div className="flex items-center gap-1.5 mt-1 group/address">
                 <MapPin size={14} className="text-base-content/60 shrink-0" />
                 <span className="text-sm text-base-content/60">
-                  {property.address ?? <span className="italic text-base-content/30">No address</span>}
+                  {property.address ?? (
+                    <span className="italic text-base-content/30">
+                      No address
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"
@@ -283,7 +308,11 @@ export function PropertyDetailPage() {
             className="btn btn-primary shrink-0"
             onClick={() => setWizardOpen(true)}
             disabled={uploadedRooms.length === 0}
-            title={uploadedRooms.length === 0 ? "Upload at least one room to generate" : undefined}
+            title={
+              uploadedRooms.length === 0
+                ? "Upload at least one room to generate"
+                : undefined
+            }
           >
             <Sparkles size={16} />
             Generate

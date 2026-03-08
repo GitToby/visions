@@ -89,7 +89,7 @@ function RoomSlot({
           : null;
       if (!roomId) return;
       setIsDeleting(true);
-      await apiClient.DELETE("/houses/{property_id}/rooms/{room_id}", {
+      await apiClient.DELETE("/properties/{property_id}/rooms/{room_id}", {
         params: { path: { property_id: propertyId, room_id: roomId } },
       });
       setIsDeleting(false);
@@ -114,12 +114,12 @@ function RoomSlot({
           : null;
 
       const { data, error } = existingRoomId
-        ? await apiClient.PUT("/houses/{property_id}/rooms/{room_id}", {
+        ? await apiClient.PUT("/properties/{property_id}/rooms/{room_id}", {
             params: { path: { property_id: propertyId, room_id: existingRoomId } },
             body: { image: file as unknown as string, label },
             bodySerializer: () => formData,
           })
-        : await apiClient.POST("/houses/{property_id}/rooms", {
+        : await apiClient.POST("/properties/{property_id}/rooms", {
             params: { path: { property_id: propertyId } },
             body: { image: file as unknown as string, label },
             bodySerializer: () => formData,

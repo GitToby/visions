@@ -32,7 +32,7 @@ export function NewProjectModal({ open, onClose }: NewProjectModalProps) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error: apiError } = await apiClient.POST("/houses", {
+    const { data, error: apiError } = await apiClient.POST("/properties", {
       body: { name },
     });
     setLoading(false);
@@ -40,7 +40,7 @@ export function NewProjectModal({ open, onClose }: NewProjectModalProps) {
       setError("Failed to create project. Please try again.");
       return;
     }
-    await queryClient.invalidateQueries({ queryKey: ["get", "/houses"] });
+    await queryClient.invalidateQueries({ queryKey: ["get", "/properties"] });
     onClose();
     navigate(`/properties/${data.id}`);
   };

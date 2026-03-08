@@ -7,7 +7,7 @@ from visions.core.db import DBSession
 from visions.core.security import CurrentUser
 from visions.models import GenerationJob, GenerationJobCreate, GenerationJobResponse, Room
 from visions.services import generation as generation_service
-from visions.services import property as house_service
+from visions.services import property as property_service
 
 router = APIRouter(prefix="/generation", tags=["generation"])
 
@@ -19,11 +19,11 @@ async def start_generation_for_room(
     background_tasks: BackgroundTasks,
     payload: GenerationJobCreate,
 ) -> list[GenerationJobResponse]:
-    """Submit and generate an AI generation request for a room in the house."""
+    """Submit and generate an AI generation request for a room in the property."""
     room = await db.get(Room, payload.room_id)
     if room is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
-    await house_service.get_or_404(db, room.property_id, current_user.id)
+    await property_service.get_or_404(db, room.property_id, current_user.id)
 
     job = GenerationJob(
         room_id=room.id,
@@ -40,16 +40,16 @@ async def start_generation_for_room(
 
 
 @router.get("/property/{property_id}", response_model=list[GenerationJobResponse])
-async def list_jobs_for_house(
+async def list_jobs_for_property(
     property_id: uuid.UUID,
     db: DBSession,
     current_user: CurrentUser,
 ) -> list[GenerationJobResponse]:
     """
-    See all generation jobs for a house.
+    See all generation jobs for a property.
     """
-    await house_service.get_or_404(db, property_id, current_user.id)
-    jobs = await generation_service.get_jobs_for_house(db, property_id)
+    await property_service.get_or_404(db, property_id, current_user.id)
+    jobs = await generation_service.get_jobs_for_property(db, property_id)
     return await asyncio.gather(*[j.to_response() for j in jobs])
 
 

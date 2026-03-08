@@ -54,7 +54,7 @@ export function GenerateWizardModal({ propertyId, rooms, onClose }: GenerateWiza
       return;
     }
     await queryClient.invalidateQueries({
-      queryKey: ["get", "/generation/houses/{property_id}", propertyId],
+      queryKey: ["get", "/generation/properties/{property_id}", propertyId],
     });
     onClose();
   };

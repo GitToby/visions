@@ -19,15 +19,15 @@ The core loop is:
 
 ## Parts
 
-### Houses
+### Properties
 
-A House is the top-level unit of organisation. It represents a single property or project — "Beach Cottage Reno", "New Apartment", etc. Everything else (rooms and generated designs) belongs to a House.
+A property is the top-level unit of organisation. It represents a single property or project — "Beach Cottage Reno", "New Apartment", etc. Everything else (rooms and generated designs) belongs to a property.
 
-The dashboard shows all your Houses as a grid of cards. From there you can open an existing project or start a new one through the wizard.
+The dashboard shows all your properties as a grid of cards. From there you can open an existing project or start a new one through the wizard.
 
 ### Rooms
 
-Rooms are the source material. Inside a House you upload photos of the actual spaces you want to redesign — living room, kitchen, bedroom, and so on. Each uploaded photo becomes a Room.
+Rooms are the source material. Inside a property you upload photos of the actual spaces you want to redesign — living room, kitchen, bedroom, and so on. Each uploaded photo becomes a Room.
 
 The AI uses the room photo as its structural foundation: it preserves the layout, proportions, windows, and architectural features while replacing the surface treatments and furnishings.
 
@@ -73,17 +73,17 @@ The frontend is a pure client-side SPA — no server-side rendering. The Vite bu
 
 ## Tech
 
-| Layer | Choice |
-|---|---|
-| Frontend | React 18, TypeScript strict, Vite, Bun |
-| UI | DaisyUI on Tailwind CSS, Lucide icons |
-| Data fetching | swr-openapi (generated from FastAPI schema) |
-| Backend | FastAPI, Python 3.14, uv |
-| ORM / DB | SQLModel, PostgreSQL, Alembic |
-| Auth | Supabase Auth (Google OAuth), PyJWT |
-| Storage | Supabase Storage |
-| AI | Google Gemini API (image-to-image) |
-| Dev tooling | mise (task runner), Docker Compose (local postgres) |
+| Layer         | Choice                                              |
+| ------------- | --------------------------------------------------- |
+| Frontend      | React 18, TypeScript strict, Vite, Bun              |
+| UI            | DaisyUI on Tailwind CSS, Lucide icons               |
+| Data fetching | swr-openapi (generated from FastAPI schema)         |
+| Backend       | FastAPI, Python 3.14, uv                            |
+| ORM / DB      | SQLModel, PostgreSQL, Alembic                       |
+| Auth          | Supabase Auth (Google OAuth), PyJWT                 |
+| Storage       | Supabase Storage                                    |
+| AI            | Google Gemini API (image-to-image)                  |
+| Dev tooling   | mise (task runner), Docker Compose (local postgres) |
 
 ---
 

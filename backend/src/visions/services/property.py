@@ -17,22 +17,22 @@ async def get_all_for_owner(db: AsyncSession, owner_id: uuid.UUID) -> list[Prope
         .order_by(Property.created_at.desc())  # type: ignore[arg-type]
         .options(selectinload(Property.rooms))  # type: ignore[arg-type]
     )
-    houses = list(result.all())
-    logger.debug("Found {} property(s) | owner_id={}", len(houses), owner_id)
-    return houses
+    properties = list(result.all())
+    logger.debug("Found {} property(s) | owner_id={}", len(properties), owner_id)
+    return properties
 
 
 async def get_by_id(
     db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID | None = None
 ) -> Property | None:
     """
-    Fetch a house by its ID. If `caller_id` is provided, only return the house if it can be accessed by the caller.
+    Fetch a property by its ID. If `caller_id` is provided, only return the property if it can be accessed by the caller.
 
     loads rooms by default.
 
     """
 
-    logger.debug("Fetching house | property_id={}", property_id)
+    logger.debug("Fetching property | property_id={}", property_id)
     q = select(Property).where(Property.id == property_id).options(selectinload(Property.rooms))  # type: ignore[arg-type]
     if caller_id is not None:
         q = q.where(Property.owner_id == caller_id)
@@ -42,49 +42,51 @@ async def get_by_id(
 
 
 async def get_or_404(db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID) -> Property:
-    house = await get_by_id(db, property_id, caller_id)
-    if house is None:
+    property = await get_by_id(db, property_id, caller_id)
+    if property is None:
         logger.debug(
-            "House not found or access denied | property_id={} owner_id={}", property_id, caller_id
+            "Property not found or access denied | property_id={} owner_id={}",
+            property_id,
+            caller_id,
         )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="House not found")
-    return house
+    return property
 
 
 async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyCreate) -> Property:
-    logger.debug("Creating house | owner_id={} name={!r}", owner_id, data.name)
-    house = Property(
+    logger.debug("Creating property | owner_id={} name={!r}", owner_id, data.name)
+    property = Property(
         name=data.name,
         description=data.description,
         address=data.address,
         owner_id=owner_id,
     )
-    db.add(house)
+    db.add(property)
     await db.commit()
-    await db.refresh(house)
-    await db.refresh(house, attribute_names=["rooms"])
-    logger.info("House created | property_id={} name={!r}", house.id, house.name)
-    return house
+    await db.refresh(property)
+    await db.refresh(property, attribute_names=["rooms"])
+    logger.info("Property created | property_id={} name={!r}", property.id, property.name)
+    return property
 
 
-async def update(db: AsyncSession, *, house: Property, data: PropertyUpdate) -> Property:
+async def update(db: AsyncSession, *, property: Property, data: PropertyUpdate) -> Property:
     if data.name is not None:
-        house.name = data.name
+        property.name = data.name
     if data.description is not None:
-        house.description = data.description
+        property.description = data.description
     if data.address is not None:
-        house.address = data.address
-    db.add(house)
+        property.address = data.address
+    db.add(property)
     await db.commit()
-    await db.refresh(house, attribute_names=["rooms"])
-    return house
+    await db.refresh(property, attribute_names=["rooms"])
+    return property
 
 
 async def delete(db: AsyncSession, property: Property) -> None:
-    logger.info("Deleting house | property_id={} name={!r}", property.id, property.name)
+    logger.info("Deleting property | property_id={} name={!r}", property.id, property.name)
     await db.delete(property)
     await db.commit()
-    logger.debug("House deleted | property_id={}", property.id)
+    logger.debug("Property deleted | property_id={}", property.id)
 
 
 async def count_rooms(db: AsyncSession, property_id: uuid.UUID) -> int:

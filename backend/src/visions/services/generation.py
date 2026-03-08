@@ -16,7 +16,7 @@ from visions.models import BUILTIN_STYLES_KV, GenerationJob, Room, User
 from visions.services import ai
 
 
-async def get_jobs_for_house(db: AsyncSession, property_id: uuid.UUID) -> list[GenerationJob]:
+async def get_jobs_for_property(db: AsyncSession, property_id: uuid.UUID) -> list[GenerationJob]:
     logger.debug("Fetching generation jobs | property_id={}", property_id)
     result = await db.exec(select(GenerationJob).join(Room).where(Room.property_id == property_id))
     jobs = list(result.all())
@@ -25,7 +25,7 @@ async def get_jobs_for_house(db: AsyncSession, property_id: uuid.UUID) -> list[G
 
 
 async def create_jobs(
-    db: AsyncSession, *, property_id: uuid.UUID, styles: set[str], sumbitter: User
+    db: AsyncSession, *, property_id: uuid.UUID, styles: set[str], submitter: User
 ) -> list[GenerationJob]:
     """Create pending GenerationJob rows for every room x style combination."""
     styles = {style for style in styles if style in BUILTIN_STYLES_KV.keys()}
@@ -34,7 +34,7 @@ async def create_jobs(
     rooms = await db.exec(q)
 
     jobs = [
-        GenerationJob(room_id=room.id, style=style_id, submitter_id=sumbitter.id)
+        GenerationJob(room_id=room.id, style=style_id, submitter_id=submitter.id)
         for room in rooms
         for style_id in styles
     ]
@@ -74,16 +74,13 @@ async def submit_job(db: AsyncSession, job: GenerationJob):
     return job
 
 
-async def main():
+async def main_genjob_rec():
     q = select(GenerationJob).where(GenerationJob.completed_at == None)
     async with async_session_factory() as session:
         jobs = await session.exec(q)
-        for job in jobs:
-            print(job)
-            await submit_job(session, job)
-            break
+        await asyncio.gather(*[submit_job(session, job) for job in jobs])
         await session.commit()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main_genjob_rec())

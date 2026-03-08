@@ -53,6 +53,7 @@ just backend::mk-migration 'describe change'   # alembic revision --autogenerate
 ```
 
 ### Tool constraints
+
 - **Frontend:** `bun` only — never `npm`, `yarn`, or `pnpm`
 - **Backend:** `uv` only — never `pip`, `pip-tools`, or raw `python -m venv`
 - **Type checker:** `pyrefly` only — never `mypy`
@@ -99,6 +100,7 @@ visions/
 ```
 
 **Structural rules:**
+
 - `features/` — all feature-specific code goes here; never scatter it into `components/`
 - `components/` — shared, stateless UI primitives only; no feature logic
 - `api/` routes — thin handlers only; delegate everything to `services/`
@@ -113,6 +115,7 @@ Match the patterns below. When in doubt, match existing files rather than invent
 ### TypeScript / React
 
 **Naming:**
+
 - Components: `PascalCase` (`HouseCard`, `StylePicker`)
 - Hooks: `camelCase` with `use` prefix (`useHouses`, `useWizardState`)
 - Utilities: `camelCase` (`formatDate`, `buildApiUrl`)
@@ -120,6 +123,7 @@ Match the patterns below. When in doubt, match existing files rather than invent
 - Constants: `UPPER_SNAKE_CASE` (`MAX_UPLOAD_SIZE_MB`)
 
 **Components** — typed props, named export, early return on missing data:
+
 ```tsx
 // ✅
 interface HouseCardProps {
@@ -136,7 +140,10 @@ export function HouseCard({ house, onDelete }: HouseCardProps) {
         <h2 className="card-title">{house.name}</h2>
         <p className="text-sm text-base-content/60">{house.roomCount} rooms</p>
         <div className="card-actions justify-end">
-          <button className="btn btn-error btn-sm" onClick={() => onDelete(house.id)}>
+          <button
+            className="btn btn-error btn-sm"
+            onClick={() => onDelete(house.id)}
+          >
             Delete
           </button>
         </div>
@@ -160,12 +167,14 @@ export default function Card({ data, fn }) {
 ### Python / FastAPI
 
 **Naming:**
+
 - Files/modules: `snake_case` (`house_router.py`, `gemini_service.py`)
 - Classes: `PascalCase` (`House`, `DesignStyle`)
 - Functions: `snake_case` (`get_house_by_id`, `trigger_generation`)
 - Pydantic schemas: suffix with `Request` / `Response` (`HouseCreateRequest`, `HouseResponse`)
 
 **Route handlers** — thin; one job is to validate input, call a service, and return:
+
 ```python
 # ✅
 @router.post("/houses", response_model=HouseResponse, status_code=201)
@@ -187,6 +196,7 @@ async def create_house(name: str, db: Session = Depends(get_db)):
 ```
 
 **Service layer** — all DB and business logic lives here:
+
 ```python
 # ✅
 async def create(
@@ -206,31 +216,41 @@ async def create(
 The frontend consumes a **fully generated, typed API client** from the FastAPI OpenAPI schema via `swr-openapi`. Never hand-write `fetch` calls or duplicate backend types as TypeScript interfaces.
 
 **Regenerate the client** after any Pydantic schema or route change:
+
 ```bash
 just frontend::gen-api
 ```
+
 Commit the resulting `schema.d.ts` alongside the backend change.
 
 **Reading data:**
+
 ```tsx
 // ✅ — typed, cached, loading/error handled
 import { useQuery } from "@/lib/api/client";
 
 export function HouseList() {
-  const { data: houses, isLoading, error } = useQuery("/houses", "get", { params: {} });
+  const {
+    data: houses,
+    isLoading,
+    error,
+  } = useQuery("/houses", "get", { params: {} });
 
   if (isLoading) return <span className="loading loading-spinner" />;
   if (error) return <div className="alert alert-error">{error.message}</div>;
 
   return (
     <div className="grid grid-cols-3 gap-4">
-      {houses?.map(h => <HouseCard key={h.id} house={h} />)}
+      {houses?.map((h) => (
+        <HouseCard key={h.id} house={h} />
+      ))}
     </div>
   );
 }
 ```
 
 **Mutating data:**
+
 ```tsx
 // ✅ — typed body, revalidates cache on success
 import { useMutation } from "@/lib/api/client";
@@ -244,11 +264,16 @@ export function CreateHouseButton() {
     mutate("/houses");
   }
 
-  return <button className="btn btn-primary" onClick={handleCreate}>Start New Project</button>;
+  return (
+    <button className="btn btn-primary" onClick={handleCreate}>
+      Start New Project
+    </button>
+  );
 }
 ```
 
 **Path parameters:**
+
 ```tsx
 const { data: house } = useQuery("/houses/{property_id}", "get", {
   params: { path: { property_id: id } },
@@ -256,6 +281,7 @@ const { data: house } = useQuery("/houses/{property_id}", "get", {
 ```
 
 **Rules:**
+
 - Import hooks from `@/lib/api/client` — never from `swr` directly for API calls
 - Use `mutate(key)` after mutations to keep the SWR cache consistent
 - Never hand-write `fetch(...)` calls to backend endpoints
@@ -266,6 +292,7 @@ const { data: house } = useQuery("/houses/{property_id}", "get", {
 ## Testing
 
 **Frontend (Vitest + Playwright):**
+
 - Unit tests in `frontend/tests/unit/` mirroring `src/` structure
 - E2E tests in `frontend/tests/e2e/`
 - Use `@testing-library/react` — test user-visible behavior, not implementation details
@@ -273,15 +300,16 @@ const { data: house } = useQuery("/houses/{property_id}", "get", {
 
 ```tsx
 // ✅ — tests what the user sees and does
-it('shows delete button and calls onDelete when clicked', async () => {
+it("shows delete button and calls onDelete when clicked", async () => {
   const onDelete = vi.fn();
   render(<HouseCard house={mockHouse} onDelete={onDelete} />);
-  await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+  await userEvent.click(screen.getByRole("button", { name: /delete/i }));
   expect(onDelete).toHaveBeenCalledWith(mockHouse.id);
 });
 ```
 
 **Backend (Pytest):**
+
 - Tests in `backend/tests/`
 - Use `pytest-asyncio` with `httpx.AsyncClient` against the FastAPI app fixture
 - Every new endpoint needs: happy path, unauthenticated (401), invalid input (422)
@@ -309,25 +337,25 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 
 ## Boundaries
 
-| | Rule |
-|---|---|
-| ✅ | Run `just check` before marking any task done |
-| ✅ | Keep route handlers thin — business logic goes in `services/` |
-| ✅ | Write tests for every new endpoint and component |
-| ✅ | Run `just frontend::gen-api` after any schema or route change; commit the result |
-| ✅ | Validate all user input with Pydantic on the backend |
-| ✅ | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits |
-| ⚠️ | **Ask first:** adding a new dependency (`bun add` / `uv add`) |
-| ⚠️ | **Ask first:** changing the DB schema or writing Alembic migrations |
-| ⚠️ | **Ask first:** modifying auth logic or JWT config |
-| ⚠️ | **Ask first:** changing the Gemini prompt or generation parameters |
-| ⚠️ | **Ask first:** any change to `docker-compose.yml` or env variable names |
-| 🚫 | Never commit secrets, API keys, or credentials |
-| 🚫 | Never modify applied Alembic migrations in `alembic/versions/` |
-| 🚫 | Never write business logic in FastAPI route handlers |
-| 🚫 | Never use `any` in TypeScript |
-| 🚫 | Never skip error handling on Gemini API calls or Supabase Storage operations |
-| 🚫 | Never delete a failing test to make the suite pass — fix the root cause |
-| 🚫 | Never use `npm`, `yarn`, `pnpm`, `pip`, or `mypy` |
-| 🚫 | Never hand-write `fetch()` calls to backend endpoints |
-| 🚫 | Never manually edit `src/lib/api/schema.d.ts` |
+|     | Rule                                                                             |
+| --- | -------------------------------------------------------------------------------- |
+| ✅  | Run `just check` before marking any task done                                    |
+| ✅  | Keep route handlers thin — business logic goes in `services/`                    |
+| ✅  | Write tests for every new endpoint and component                                 |
+| ✅  | Run `just frontend::gen-api` after any schema or route change; commit the result |
+| ✅  | Validate all user input with Pydantic on the backend                             |
+| ✅  | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits      |
+| ⚠️  | **Ask first:** adding a new dependency (`bun add` / `uv add`)                    |
+| ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations              |
+| ⚠️  | **Ask first:** modifying auth logic or JWT config                                |
+| ⚠️  | **Ask first:** changing the Gemini prompt or generation parameters               |
+| ⚠️  | **Ask first:** any change to `docker-compose.yml` or env variable names          |
+| 🚫  | Never commit secrets, API keys, or credentials                                   |
+| 🚫  | Never modify applied Alembic migrations in `alembic/versions/`                   |
+| 🚫  | Never write business logic in FastAPI route handlers                             |
+| 🚫  | Never use `any` in TypeScript                                                    |
+| 🚫  | Never skip error handling on Gemini API calls or Supabase Storage operations     |
+| 🚫  | Never delete a failing test to make the suite pass — fix the root cause          |
+| 🚫  | Never use `npm`, `yarn`, `pnpm`, `pip`, or `mypy`                                |
+| 🚫  | Never hand-write `fetch()` calls to backend endpoints                            |
+| 🚫  | Never manually edit `src/lib/api/schema.d.ts`                                    |

@@ -18,10 +18,11 @@ def system_prompt(style_name: str, style_description: str, extra_context: str | 
         f"You are an expert interior designer. Redesign this room in the '{style_name}' style.\n\n"
         f"Style description: {style_description}\n\n"
         "Requirements:\n"
+        "- Output a photorealistic interior photograph.\n"
         "- Preserve the room's layout, dimensions, windows, and doors exactly.\n"
         "- Replace furnishings, colours, textures, and decor to match the style.\n"
-        "- Maintain realistic lighting and proportions.\n"
-        "- Output a photorealistic interior photograph."
+        "- Keep aspect ratio, framing and scale true to the original image.\n"
+        "- Maintain realistic lighting and proportions."
     )
     if extra_context:
         prompt += f"\n\nAdditional instructions:\n\n{extra_context}"

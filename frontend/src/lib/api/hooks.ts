@@ -33,9 +33,9 @@ export function useMe(enabled = true) {
 
 export function useProperties() {
   return useQuery({
-    queryKey: ["get", "/houses"],
+    queryKey: ["get", "/properties"],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/houses");
+      const { data, error } = await apiClient.GET("/properties");
       if (error) throw error;
       return data;
     },
@@ -44,9 +44,9 @@ export function useProperties() {
 
 export function useProperty(propertyId: string) {
   return useQuery({
-    queryKey: ["get", "/houses/{property_id}", propertyId],
+    queryKey: ["get", "/properties/{property_id}", propertyId],
     queryFn: async () => {
-      const { data, error } = await apiClient.GET("/houses/{property_id}", {
+      const { data, error } = await apiClient.GET("/properties/{property_id}", {
         params: { path: { property_id: propertyId } },
       });
       if (error) throw error;
@@ -69,11 +69,11 @@ export function useStyles() {
 
 export function useGenerations(propertyId: string) {
   return useQuery({
-    queryKey: ["get", "/generation/houses/{property_id}", propertyId],
+    queryKey: ["get", "/generation/properties/{property_id}", propertyId],
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
-        "/generation/houses/{property_id}",
-        { params: { path: { property_id: propertyId } } }
+        "/generation/property/{property_id}",
+        { params: { path: { property_id: propertyId } } },
       );
       if (error) throw error;
       return data;
