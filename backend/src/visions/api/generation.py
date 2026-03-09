@@ -12,7 +12,7 @@ from visions.services import generation as generation_service
 router = APIRouter(prefix="/generation", tags=["generation"])
 
 
-@router.post("", response_model=list[GenerationJobResponse], status_code=status.HTTP_202_ACCEPTED)
+@router.post("", response_model=GenerationJobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def start_generation_for_room(
     db: DBSession,
     current_user: CurrentUser,
