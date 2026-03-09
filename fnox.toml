@@ -2,5 +2,22 @@ default_provider = "op"
 
 [providers.op]
 type = "1password"
-vault = "Employee"
 
+# to sync locally
+# fnox sync --provider age --config fnox.local.toml
+[providers.age]
+type = "age"
+recipients = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKLE8eU9iSeObEwuJFlW5+5gzE7Km6YDymjP2gaRmEpD"
+]
+
+[secrets]
+VITE_API_BASE_URL = {default="http://localhost:8000"}
+VITE_SUPABASE_URL = {default="https://sutnrwodqzpfvuuboksu.supabase.co"}
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY = {default="sb_publishable_l6XbltlqEPGu-hm18EGx-Q_qjLMqPS4"}
+
+#  run sync if this is slow.
+DATABASE_PASSWORD = { provider = "op", value = "op://Employee/VISIONS App Secrets/Prod/database_password" }
+SUPABASE_SECRET_KEY= { provider = "op", value = "op://Employee/VISIONS App Secrets/Prod/supabase_secret_key" }
+S3_SECRET_ACCESS_KEY= { provider = "op", value = "op://Employee/VISIONS App Secrets/Prod/s3_secret_access_key"}
+GEMINI_API_KEY= { provider = "op", value = "op://Employee/VISIONS App Secrets/Prod/gemini_api_key" }

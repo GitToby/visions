@@ -4,5 +4,6 @@ prek = "latest"
 uv     = "latest"
 bun    = "latest"
 # secrets
+1password = "latest"
 fnox = "latest"
 age = "latest"
