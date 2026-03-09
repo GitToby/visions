@@ -11,19 +11,13 @@ from pydantic import BaseModel
 from visions.api import auth, generation, property, styles
 from visions.core.config import SETTINGS
 
-logger.info("starting")
 app = FastAPI(
     title=SETTINGS.app_name,
     version="0.1.0",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=SETTINGS.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+app = FastAPI()
 
 
 @app.middleware("http")
@@ -57,3 +51,12 @@ class HealthCheckResponse(BaseModel):
 @app.get("/health", tags=["meta"])
 async def health() -> HealthCheckResponse:
     return HealthCheckResponse()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=SETTINGS.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

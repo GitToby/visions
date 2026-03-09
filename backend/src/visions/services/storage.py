@@ -2,18 +2,30 @@
 
 import boto3
 from botocore.exceptions import ClientError
-from cachetools.func import ttl_cache
 from fastapi import HTTPException, status
 from fastapi.datastructures import UploadFile
 from loguru import logger
-from supabase import create_client
+from supabase import create_async_client
 
 from visions.core.config import SETTINGS
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
+_supabase_client = None
 
-_supabase = create_client(SETTINGS.supabase_url, SETTINGS.supabase_secret_key.get_secret_value())
+
+async def _get_supabase():
+    global _supabase_client
+    if _supabase_client is None:
+        # Initialized only when first called
+        _supabase_client = await create_async_client(
+            SETTINGS.supabase_url, SETTINGS.supabase_secret_key.get_secret_value()
+        )
+    return _supabase_client
+
+
+# Usage:
+
 
 _s3 = boto3.client(
     "s3",
@@ -49,8 +61,7 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
 
 
-@ttl_cache(ttl=SIGNED_URL_EXPIRES - 3)
-def s3_presigned_url(*, bucket: str, key: str):
+async def s3_presigned_url(*, bucket: str, key: str):
     """
     Generate a signed URL via the Supabase Storage SDK.
 
@@ -58,7 +69,8 @@ def s3_presigned_url(*, bucket: str, key: str):
     """
     logger.debug(f"Generating presigned URL | {bucket}/{key}")
     try:
-        result = _supabase.storage.from_(bucket).create_signed_url(key, SIGNED_URL_EXPIRES)
+        client = await _get_supabase()
+        result = await client.storage.from_(bucket).create_signed_url(key, SIGNED_URL_EXPIRES)
         return result["signedURL"]
     except Exception as exc:
         logger.error("Presigned URL generation failed | key={} error={}", key, exc)

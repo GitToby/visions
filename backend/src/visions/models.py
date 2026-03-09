@@ -89,9 +89,7 @@ class FileStoreMixin(ABC):
 
     async def get_image_url(self) -> str | None:
         """Returns a presigned URL for the image"""
-        if storage.file_exists(bucket=self.__bucket__, key=self.image_key):
-            return storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
-        return None
+        return await storage.s3_presigned_url(bucket=self.__bucket__, key=self.image_key)
 
     async def upload_image(self, image: BinaryIO) -> None:
         """Upload the image to S3"""
@@ -236,7 +234,7 @@ class RoomBase(SQLModel):
 class RoomUpdate(RoomBase):
     """Data needed to update a room"""
 
-    image: UploadFile
+    image: UploadFile | None = None
     """The image of the room"""
 
 

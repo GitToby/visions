@@ -22,7 +22,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 
 @router.get("", response_model=list[PropertyResponse])
 async def list_properties(db: DBSession, current_user: CurrentUser) -> list[PropertyResponse]:
-    properties = await property_service.get_all_for_owner(db, current_user.id)
+    properties = await property_service.list_all(db, current_user.id)
     return await asyncio.gather(*[property.to_response() for property in properties])
 
 
@@ -70,11 +70,10 @@ async def create_room(
     current_user: CurrentUser,
     property_id: uuid.UUID,
     image: UploadFile = File(...),  # noqa B008
-    label: str = Form(default="Room"),
+    label: str = Form(...),
 ) -> RoomResponse:
-    await property_service.get_or_404(db, property_id, current_user.id)
     room_create = RoomCreate(property_id=property_id, label=label, image=image)
-    room = await room_service.create(db, room_create=room_create)
+    room = await room_service.create(db, caller_id=current_user.id, data=room_create)
     return await room.to_response()
 
 
@@ -85,21 +84,8 @@ async def get_room(
     property_id: uuid.UUID,
     room_id: uuid.UUID,
 ) -> RoomResponse:
-    room = await room_service.get_or_404(
-        db, property_id=property_id, room_id=room_id, caller=current_user
-    )
+    room = await room_service.get_or_404(db, room_id=room_id, caller_id=current_user.id)
     return await room.to_response()
-
-
-# question, what if theyre not pngs
-# @router.get("/{property_id}/rooms/{room_id}.webp", response_model=StreamingResponse)
-# async def get_room_image(
-#     db: DBSession,
-#     current_user: CurrentUser,
-#     property_id: uuid.UUID,
-#     room_id: uuid.UUID,
-# ) -> StreamingResponse:
-#     ...
 
 
 @router.put("/{property_id}/rooms/{room_id}", response_model=RoomResponse)
@@ -109,12 +95,11 @@ async def update_room(
     property_id: uuid.UUID,
     room_id: uuid.UUID,
     label: str | None = None,
-    image: UploadFile = File(...),  # noqa B008
+    image: UploadFile = File(None),  # noqa B008
 ) -> RoomResponse:
-    await property_service.get_or_404(db, property_id, current_user.id)
-    room = await room_service.get_or_404(db, property_id=property_id, room_id=room_id)
+    room = await room_service.get_or_404(db, room_id=room_id, caller_id=current_user.id)
     room_update = RoomUpdate(label=label or room.label, image=image)
-    room = await room_service.update(db, room=room, room_update=room_update)
+    room = await room_service.update(db, room=room, data=room_update)
     return await room.to_response()
 
 
@@ -125,6 +110,5 @@ async def delete_room(
     property_id: uuid.UUID,
     room_id: uuid.UUID,
 ) -> None:
-    await property_service.get_or_404(db, property_id, current_user.id)
-    room = await room_service.get_or_404(db, property_id=property_id, room_id=room_id)
+    room = await room_service.get_or_404(db, room_id=room_id, caller_id=current_user.id)
     await room_service.delete(db, room=room)

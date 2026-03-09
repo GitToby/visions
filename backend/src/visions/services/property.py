@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 
 from fastapi import HTTPException, status
 from loguru import logger
@@ -9,47 +10,42 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from visions.models import Property, PropertyCreate, PropertyUpdate, Room
 
 
-async def get_all_for_owner(db: AsyncSession, owner_id: uuid.UUID) -> list[Property]:
-    logger.debug("Fetching all properties | owner_id={}", owner_id)
+async def list_all(db: AsyncSession, caller_id: uuid.UUID) -> Sequence[Property]:
+    """List all properties for a given owner."""
+    logger.debug("Listing properties | caller_id={}", caller_id)
     result = await db.exec(
         select(Property)
-        .where(Property.owner_id == owner_id)
+        .where(Property.owner_id == caller_id)
         .order_by(Property.created_at.desc())  # type: ignore[arg-type]
-        .options(selectinload(Property.rooms))  # type: ignore[arg-type]
+        .options(selectinload(Property.rooms).selectinload(Room.generation_jobs))  # type: ignore[arg-type]
     )
-    properties = list(result.all())
-    logger.debug("Found {} property(s) | owner_id={}", len(properties), owner_id)
+    properties = result.all()
+    logger.debug("Found {} property(s) | caller_id={}", len(properties), caller_id)
     return properties
 
 
-async def get_by_id(
-    db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID | None = None
-) -> Property | None:
-    """
-    Fetch a property by its ID. If `caller_id` is provided, only return the property if it can be accessed by the caller.
-
-    loads rooms by default.
-
-    """
-
-    logger.debug("Fetching property | property_id={}", property_id)
-    q = select(Property).where(Property.id == property_id).options(selectinload(Property.rooms))  # type: ignore[arg-type]
-    if caller_id is not None:
-        q = q.where(Property.owner_id == caller_id)
+async def get(db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID) -> Property | None:
+    """Fetch a property by its ID, ensuring the caller has access."""
+    logger.debug("Fetching property | property_id={} caller_id={}", property_id, caller_id)
+    q = (
+        select(Property)
+        .where(Property.id == property_id, Property.owner_id == caller_id)
+        .options(selectinload(Property.rooms).selectinload(Room.generation_jobs))  # type: ignore[arg-type]
+    )
 
     result = await db.exec(q)
     return result.first()
 
 
 async def get_or_404(db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID) -> Property:
-    property = await get_by_id(db, property_id, caller_id)
+    property = await get(db, property_id, caller_id)
     if property is None:
         logger.debug(
-            "Property not found or access denied | property_id={} owner_id={}",
+            "Property not found or access denied | property_id={} caller_id={}",
             property_id,
             caller_id,
         )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="House not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
     return property
 
 

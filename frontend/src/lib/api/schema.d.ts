@@ -216,16 +216,13 @@ export interface components {
         Body_create_room_properties__property_id__rooms_post: {
             /** Image */
             image: string;
-            /**
-             * Label
-             * @default Room
-             */
+            /** Label */
             label: string;
         };
         /** Body_update_room_properties__property_id__rooms__room_id__put */
         Body_update_room_properties__property_id__rooms__room_id__put: {
             /** Image */
-            image: string;
+            image?: string;
         };
         /** DesignStyle */
         DesignStyle: {
@@ -284,6 +281,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HealthCheckResponse */
+        HealthCheckResponse: {
+            /**
+             * Status
+             * @default ok
+             * @constant
+             */
+            status: "ok";
         };
         /** PropertyCreate */
         PropertyCreate: {
@@ -668,7 +674,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_update_room_properties__property_id__rooms__room_id__put"];
             };
@@ -854,9 +860,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["HealthCheckResponse"];
                 };
             };
         };
