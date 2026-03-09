@@ -18,38 +18,38 @@ You are an expert full-stack engineer on the Visions codebase: a React 18 SPA ba
 
 ## Commands
 
-Use `just` for all common operations. Run `just` with no arguments to list all available recipes.
+Use `mise run` for all common operations. Run `mise run` with no arguments to list all available tasks.
 
 ### Root recipes
 
 ```bash
-just init                        # install all deps (frontend + backend)
-just lint                        # lint frontend + backend
-just check                       # full pre-PR suite: typecheck + tests for both sides
-just test                        # run all tests (frontend + backend)
+mise run init                        # install all deps (frontend + backend)
+mise run lint                        # lint frontend + backend
+mise run check                       # full pre-PR suite: typecheck + tests for both sides
+mise run test                        # run all tests (frontend + backend)
 ```
 
-### Frontend recipes (`just frontend::<recipe>`)
+### Frontend recipes (`mise run frontend:<recipe>`)
 
 ```bash
-just frontend::init              # bun install
-just frontend::dev               # Vite dev server — http://localhost:5173
-just frontend::lint              # eslint with auto-fix
-just frontend::check             # lint + tsc --noEmit
-just frontend::test [flags]      # vitest (unit); pass flags directly to vitest
-just frontend::gen-api           # regenerate typed API client from live schema
+mise run frontend:init              # bun install
+mise run frontend:dev               # Vite dev server — http://localhost:5173
+mise run frontend:lint              # eslint with auto-fix
+mise run frontend:check             # lint + tsc --noEmit
+mise run frontend:test [flags]      # vitest (unit); pass flags directly to vitest
+mise run frontend:gen-api           # regenerate typed API client from live schema
 ```
 
-### Backend recipes (`just backend::<recipe>`)
+### Backend recipes (`mise run backend:<recipe>`)
 
 ```bash
-just backend::init               # uv sync --all-groups
-just backend::serve              # uvicorn — http://localhost:8000
-just backend::lint               # ruff format + ruff check --fix
-just backend::check              # lint + pyrefly check
-just backend::test [flags]       # pytest -v; pass flags directly to pytest
-just backend::migrate            # alembic upgrade head
-just backend::mk-migration 'describe change'   # alembic revision --autogenerate
+mise run backend:init               # uv sync --all-groups
+mise run backend:serve              # uvicorn — http://localhost:8000
+mise run backend:lint               # ruff format + ruff check --fix
+mise run backend:check              # lint + pyrefly check
+mise run backend:test [flags]       # pytest -v; pass flags directly to pytest
+mise run backend:migrate            # alembic upgrade head
+mise run backend:mk-migration 'describe change'   # alembic revision --autogenerate
 ```
 
 ### Tool constraints
@@ -93,7 +93,7 @@ visions/
 │       │   └── auth.py
 │       └── core/              # Config, DB session, dependencies
 │
-├── justfile
+├── mise.toml
 ├── docker-compose.yml
 ├── agents.md
 └── readme.md
@@ -218,7 +218,7 @@ The frontend consumes a **fully generated, typed API client** from the FastAPI O
 **Regenerate the client** after any Pydantic schema or route change:
 
 ```bash
-just frontend::gen-api
+mise run frontend:gen-api
 ```
 
 Commit the resulting `schema.d.ts` alongside the backend change.
@@ -330,7 +330,7 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 - **Never commit to `main`.** All changes go through a pull request.
 - Branch naming: `feat/<description>`, `fix/<description>`, `chore/<description>`
 - Commit style: Conventional Commits — `feat: add style picker to wizard step 3`
-- Before opening a PR: `just check` must pass completely
+- Before opening a PR: `mise run check` must pass completely
 - Keep PRs focused — one feature or fix per PR
 
 ---
@@ -339,10 +339,10 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 
 |     | Rule                                                                             |
 | --- | -------------------------------------------------------------------------------- |
-| ✅  | Run `just check` before marking any task done                                    |
+| ✅  | Run `mise run check` before marking any task done                                    |
 | ✅  | Keep route handlers thin — business logic goes in `services/`                    |
 | ✅  | Write tests for every new endpoint and component                                 |
-| ✅  | Run `just frontend::gen-api` after any schema or route change; commit the result |
+| ✅  | Run `mise run frontend:gen-api` after any schema or route change; commit the result |
 | ✅  | Validate all user input with Pydantic on the backend                             |
 | ✅  | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits      |
 | ⚠️  | **Ask first:** adding a new dependency (`bun add` / `uv add`)                    |
