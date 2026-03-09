@@ -56,6 +56,15 @@ wheels = [
 ]
 
 [[package]]
+name = "async-cache"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/fc/2c1f3ad6eeb791547512d220fd704dafb60550300aab0cf6d7e2fd726603/async_cache-2.0.0.tar.gz", hash = "sha256:62b17c216b0b437dcfdf1890b4770b8b11f3b42ce4be1c30949575c2c2194911", size = 17046, upload-time = "2026-02-28T11:23:08.875Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/de/67f89784b5f332e68cd666c998fc993abe6a6ac01a63a1912b0eeacf3396/async_cache-2.0.0-py3-none-any.whl", hash = "sha256:620b632adc7f26efdcae3f371d7627bbc4649815f42ec661ccc05953d5e93b76", size = 9755, upload-time = "2026-02-28T11:23:07.492Z" },
+]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -97,6 +106,7 @@ name = "backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "async-cache" },
     { name = "boto3" },
     { name = "cachetools" },
     { name = "fastapi" },
@@ -128,6 +138,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "async-cache", specifier = ">=2.0.0" },
     { name = "boto3", specifier = ">=1.42.60" },
     { name = "cachetools", specifier = ">=6.2.6" },
     { name = "fastapi", specifier = ">=0.135.1" },

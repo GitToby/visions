@@ -19,6 +19,14 @@ app = FastAPI(
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=SETTINGS.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -51,12 +59,3 @@ class HealthCheckResponse(BaseModel):
 @app.get("/health", tags=["meta"])
 async def health() -> HealthCheckResponse:
     return HealthCheckResponse()
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=SETTINGS.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)

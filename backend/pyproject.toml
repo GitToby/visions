@@ -25,6 +25,7 @@ dependencies = [
     "loguru>=0.7.3",
     "greenlet>=3.3.2",
     "cachetools>=6.2.6",
+    "async-cache>=2.0.0",
 ]
 
 [dependency-groups]
