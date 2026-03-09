@@ -12,14 +12,17 @@ from pydantic_ai.messages import ImageUrl
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from visions.core.config import SETTINGS
 from visions.core.db import async_session_factory
 from visions.models import (
     BUILTIN_STYLES_KV,
     GenerationJob,
     GenerationJobCreate,
     Room,
+    User,
 )
 from visions.services import ai
+from visions.services import room as room_service
 
 
 async def list_all(
@@ -54,19 +57,15 @@ async def get_or_404(db: AsyncSession, job_id: uuid.UUID, caller_id: uuid.UUID) 
     return job
 
 
-async def create(
-    db: AsyncSession, *, data: GenerationJobCreate, caller_id: uuid.UUID
-) -> GenerationJob:
+async def create(db: AsyncSession, *, data: GenerationJobCreate, caller: User) -> GenerationJob:
     """Create a single pending GenerationJob."""
+    caller_id = caller.id
     logger.debug(
         "Creating generation job | room_id={} style={} caller_id={}",
         data.room_id,
         data.style,
         caller_id,
     )
-
-    # Verify room ownership
-    from visions.services import room as room_service
 
     await room_service.get_or_404(db, room_id=data.room_id, caller_id=caller_id)
 
@@ -77,11 +76,14 @@ async def create(
 
     job = GenerationJob(
         room_id=data.room_id,
+        original_job_id=None,  # todo: make this a property which allows updates to the underlying generation
         style=data.style,
         submitter_id=caller_id,
         extra_context=data.extra_context,
     )
     db.add(job)
+    caller.balance -= SETTINGS.generation_cost
+    db.add(caller)
     await db.commit()
     await db.refresh(job)
     logger.debug("Job created | job_id={}", job.id)
@@ -134,45 +136,20 @@ async def submit_job(job_id: uuid.UUID):
             job.completed_at = datetime.now(UTC)
             job.error_message = None
 
+            usage = resp.usage()
+            job.llm_model = ai.model.model_id
+            job.llm_requests = usage.requests
+            job.llm_tool_calls = usage.tool_calls
+            job.llm_input_tokens = usage.input_tokens
+            job.llm_cache_write_tokens = usage.cache_write_tokens
+            job.llm_cache_read_tokens = usage.cache_read_tokens
+            job.llm_output_tokens = usage.output_tokens
+
         except Exception as exc:
             logger.exception("Job failed | job_id={} error={}", job_id, exc)
             job.error_message = str(exc)
 
         await db.commit()
-
-
-async def create_batch(
-    db: AsyncSession, *, property_id: uuid.UUID, styles: set[str], caller_id: uuid.UUID
-) -> list[GenerationJob]:
-    """Create pending GenerationJob rows for every room x style combination in a property."""
-    logger.debug(
-        "Creating generation jobs batch | property_id={} styles={} caller_id={}",
-        property_id,
-        styles,
-        caller_id,
-    )
-
-    # Check if the styles are valid
-    styles = {style for style in styles if style in BUILTIN_STYLES_KV.keys()}
-
-    # Verify property ownership and get rooms
-    from visions.services import property as property_service
-
-    await property_service.get_or_404(db, property_id, caller_id)
-    rooms = await property_service.get_rooms(db, property_id)
-
-    jobs = [
-        GenerationJob(room_id=room.id, style=style_id, submitter_id=caller_id)
-        for room in rooms
-        for style_id in styles
-    ]
-
-    for job in jobs:
-        db.add(job)
-
-    await db.commit()
-    logger.debug("Batch jobs persisted | count={}", len(jobs))
-    return jobs
 
 
 async def main_genjob_rec():

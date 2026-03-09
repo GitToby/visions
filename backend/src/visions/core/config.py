@@ -53,5 +53,8 @@ class Settings(BaseSettings):
     # https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-image
     gemini_model: str = "gemini-2.5-flash-image"
 
+    generation_cost: float = 1.0
+    generation_cost_pro: float = 0.75
+
 
 SETTINGS = Settings()  # pyright: ignore[reportCallIssue]

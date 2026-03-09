@@ -130,7 +130,8 @@ class FileStoreMixin(ABC):
 class UserBase(SQLModel):
     email: str = Field(unique=True, index=True, max_length=255)
     name: str = Field(max_length=255)
-    picture: str | None = Field(default=None)
+    picture: str | None = None
+    balance: float = 0
 
 
 class User(UserBase, CreatedUpdatedAtMixin, table=True):
@@ -312,6 +313,7 @@ class GenerationJobBase(SQLModel):
 
 class GenerationJobCreate(SQLModel):
     room_id: uuid.UUID
+    original_job_id: uuid.UUID | None = None
     style: str
     extra_context: str | None = None
 
@@ -321,11 +323,26 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
 
     submitter_id: uuid.UUID = Field(foreign_key="user.id", index=True)
     room_id: uuid.UUID = Field(foreign_key="room.id", index=True)
+    original_job_id: uuid.UUID | None = Field(None, foreign_key="generationjob.id", index=True)
     style: str = Field(index=True)
 
     extra_context: str | None = None
     error_message: str | None = None
     completed_at: datetime | None = Field(default=None, sa_type=TIMESTAMP)
+
+    # pydantic usage metrics
+    # https://ai.pydantic.dev/api/usage
+    llm_model: str | None = None
+    llm_requests: int = 0
+    llm_tool_calls: int = 0
+    llm_input_tokens: int = 0
+    llm_cache_write_tokens: int = 0
+    llm_cache_read_tokens: int = 0
+    llm_output_tokens: int = 0
+
+    @property
+    def llm_total_tokens(self) -> int:
+        return self.llm_input_tokens + self.llm_output_tokens
 
     @property
     @override
@@ -333,6 +350,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
         return f"generation-jobs/{self.room_id}/{self.style}"
 
     room: Room = Relationship(back_populates="generation_jobs")
+    original_job: GenerationJob | None = Relationship(back_populates="original_job")
 
     async def to_response(self) -> GenerationJobResponse:
         return GenerationJobResponse(

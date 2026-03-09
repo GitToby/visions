@@ -1,8 +1,9 @@
 import asyncio
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 
+from visions.core.config import SETTINGS
 from visions.core.db import DBSession
 from visions.core.security import CurrentUser
 from visions.models import GenerationJobCreate, GenerationJobResponse
@@ -19,8 +20,13 @@ async def start_generation_for_room(
     payload: GenerationJobCreate,
 ) -> list[GenerationJobResponse]:
     """Submit and generate an AI generation request for a room in the property."""
-    job = await generation_service.create(db, data=payload, caller_id=current_user.id)
+    if current_user.balance < SETTINGS.generation_cost:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Insufficient balance"
+        )
+    job = await generation_service.create(db, data=payload, caller=current_user)
     background_tasks.add_task(generation_service.submit_job, job.id)
+
     return [await job.to_response()]
 
 
