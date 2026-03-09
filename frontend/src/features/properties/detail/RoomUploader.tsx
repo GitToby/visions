@@ -191,14 +191,16 @@ function RoomSlot({
           <X size={12} />
         </button>
       )}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={isBusy ? -1 : 0}
         className={`card card-border bg-base-100 overflow-hidden select-none transition-all text-left w-full ${
           isBusy
             ? "cursor-wait"
             : "cursor-pointer hover:shadow-md hover:border-primary/40"
         } ${isDragOver ? "border-primary ring-2 ring-primary/30" : ""}`}
         onClick={handleCardClick}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleCardClick(); }}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={() => setIsDragOver(false)}
@@ -302,7 +304,7 @@ function RoomSlot({
             <span className="loading loading-spinner loading-xs text-base-content/40" />
           )}
         </div>
-      </button>
+      </div>
     </div>
   );
 }
