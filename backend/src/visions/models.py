@@ -143,7 +143,10 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
 
     id: uuid.UUID = Field(primary_key=True)
 
-    properties: list[Property] = Relationship(back_populates="owner")
+    properties: list[Property] = Relationship(
+        back_populates="owner",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True},
+    )
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -188,10 +191,13 @@ class PropertyUpdate(SQLModel):
 
 
 class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
-    owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+    owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
 
     owner: User = Relationship(back_populates="properties")
-    rooms: list[Room] = Relationship(back_populates="property")
+    rooms: list[Room] = Relationship(
+        back_populates="property",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan", "passive_deletes": True},
+    )
 
     async def to_response(self) -> PropertyResponse:
         return PropertyResponse(
@@ -260,7 +266,7 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     __bucket__: str = SETTINGS.s3_bucket__rooms
     __table_args__ = (UniqueConstraint("property_id", "label"),)
 
-    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
+    property_id: uuid.UUID = Field(foreign_key="property.id", ondelete="CASCADE", index=True)
     label: str = Field(max_length=100)
 
     @property
@@ -271,7 +277,7 @@ class Room(RoomBase, UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=Tru
     property: Property = Relationship(back_populates="rooms")
     generation_jobs: list[GenerationJob] = Relationship(
         back_populates="room",
-        sa_relationship_kwargs={"lazy": "selectin"},
+        sa_relationship_kwargs={"lazy": "selectin", "passive_deletes": True},
     )
 
     async def to_response(self) -> RoomResponse:
@@ -321,9 +327,9 @@ class GenerationJobCreate(SQLModel):
 class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True):
     __bucket__: str = SETTINGS.s3_bucket__rooms
 
-    submitter_id: uuid.UUID = Field(foreign_key="user.id", index=True)
-    room_id: uuid.UUID = Field(foreign_key="room.id", index=True)
-    original_job_id: uuid.UUID | None = Field(None, foreign_key="generationjob.id", index=True)
+    submitter_id: uuid.UUID | None = Field(foreign_key="user.id", ondelete="SET NULL", index=True)
+    room_id: uuid.UUID | None = Field(foreign_key="room.id", ondelete="SET NULL", index=True)
+    original_job_id: uuid.UUID | None = Field(None, foreign_key="generationjob.id", ondelete="SET NULL", index=True)
     style: str = Field(index=True)
 
     extra_context: str | None = None
@@ -380,7 +386,7 @@ class GenerationJobResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    room_id: uuid.UUID
+    room_id: uuid.UUID | None
     style: str
     image_url: str | None
     error_message: str | None
