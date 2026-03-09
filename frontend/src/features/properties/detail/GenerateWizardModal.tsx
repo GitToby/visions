@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { apiClient } from "../../../lib/api/hooks";
 import type { components } from "../../../lib/api/schema";
 import { StylePicker } from "../../styles/StylePicker";
@@ -27,12 +28,12 @@ export function GenerateWizardModal({
   preselectedStyleId,
   onClose,
 }: GenerateWizardModalProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(() => (preselectedStyleId ? 2 : 1));
   const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>(() =>
     preselectedStyleId ? [preselectedStyleId] : []
   );
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<"balance" | "generic" | null>(null);
   const [extraContext, setExtraContext] = useState("");
   const queryClient = useQueryClient();
 
@@ -81,10 +82,10 @@ export function GenerateWizardModal({
     const results = await Promise.all(
       jobs.map((body) => apiClient.POST("/generation", { body }))
     );
-    const apiError = results.find((r) => r.error)?.error ?? null;
+    const failed = results.find((r) => r.error);
     setGenerating(false);
-    if (apiError) {
-      setError("Generation failed. Please try again.");
+    if (failed) {
+      setError(failed.response?.status === 402 ? "balance" : "generic");
       return;
     }
     await queryClient.invalidateQueries({
@@ -281,9 +282,17 @@ export function GenerateWizardModal({
                 </span>
               </div>
 
-              {error && (
+              {error === "balance" && (
                 <div className="alert alert-error">
-                  <span>{error}</span>
+                  <span>No balance left for generation.</span>
+                  <Link to="/profile" className="btn btn-sm btn-outline" onClick={onClose}>
+                    Profile
+                  </Link>
+                </div>
+              )}
+              {error === "generic" && (
+                <div className="alert alert-error">
+                  <span>Generation failed. Please try again.</span>
                 </div>
               )}
             </div>

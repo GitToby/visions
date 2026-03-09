@@ -18,7 +18,7 @@ async def start_generation_for_room(
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
     payload: GenerationJobCreate,
-) -> list[GenerationJobResponse]:
+) -> GenerationJobResponse:
     """Submit and generate an AI generation request for a room in the property."""
     if current_user.balance < SETTINGS.generation_cost:
         raise HTTPException(
@@ -27,7 +27,7 @@ async def start_generation_for_room(
     job = await generation_service.create(db, data=payload, caller=current_user)
     background_tasks.add_task(generation_service.submit_job, job.id)
 
-    return [await job.to_response()]
+    return await job.to_response()
 
 
 @router.get("/property/{property_id}", response_model=list[GenerationJobResponse])

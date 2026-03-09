@@ -244,6 +244,8 @@ export interface components {
              * Format: uuid
              */
             room_id: string;
+            /** Original Job Id */
+            original_job_id?: string | null;
             /** Style */
             style: string;
             /** Extra Context */
@@ -379,13 +381,13 @@ export interface components {
             name: string;
             /** Picture */
             picture: string | null;
+            /** Balance */
+            balance: number;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
-            /** Updated At */
-            updated_at: string | null;
         };
         /** ValidationError */
         ValidationError: {

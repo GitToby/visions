@@ -26,11 +26,13 @@ from visions.services import room as room_service
 
 
 async def list_all(
-    db: AsyncSession, *, property_id: uuid.UUID | None = None, caller_id: uuid.UUID
+    db: AsyncSession, *, property_id: uuid.UUID | None = None, caller_id: uuid.UUID | None
 ) -> Sequence[GenerationJob]:
     """List generation jobs for a property or all jobs for a user."""
     logger.debug("Listing generation jobs | property_id={} caller_id={}", property_id, caller_id)
-    q = select(GenerationJob).where(GenerationJob.submitter_id == caller_id)
+    q = select(GenerationJob)
+    if caller_id:
+        q = q.where(GenerationJob.submitter_id == caller_id)
     if property_id:
         q = q.join(Room).where(Room.property_id == property_id)
 
@@ -38,12 +40,15 @@ async def list_all(
     return result.all()
 
 
-async def get(db: AsyncSession, job_id: uuid.UUID, caller_id: uuid.UUID) -> GenerationJob | None:
-    """Fetch a specific generation job, ensuring the caller has access."""
+async def get(
+    db: AsyncSession, job_id: uuid.UUID, caller_id: uuid.UUID | None
+) -> GenerationJob | None:
+    """Fetch a specific generation job. Optionally pass a caller_id to
+    ensuring the caller has access."""
     logger.debug("Fetching generation job | job_id={} caller_id={}", job_id, caller_id)
-    q = select(GenerationJob).where(
-        GenerationJob.id == job_id, GenerationJob.submitter_id == caller_id
-    )
+    q = select(GenerationJob).where(GenerationJob.id == job_id)
+    if caller_id:
+        q = q.where(GenerationJob.submitter_id == caller_id)
     result = await db.exec(q)
     return result.first()
 
@@ -100,7 +105,7 @@ async def delete(db: AsyncSession, *, job: GenerationJob) -> None:
 async def submit_job(job_id: uuid.UUID):
     """Run a generation job in its own DB session. Safe to call from a background task."""
     async with async_session_factory() as db:
-        job = await db.get(GenerationJob, job_id)
+        job = await get(db, job_id, caller_id=None)
         if job is None:
             logger.error("Job not found | job_id={}", job_id)
             return

@@ -6,7 +6,7 @@ from cache import AsyncTTL
 from fastapi import HTTPException, status
 from fastapi.datastructures import UploadFile
 from loguru import logger
-from supabase import create_async_client
+from supabase import StorageException, create_async_client
 
 from visions.core.config import SETTINGS
 
@@ -48,6 +48,35 @@ def file_exists(*, bucket: str, key: str) -> bool:
         raise
 
 
+_url_cache = AsyncTTL(time_to_live=SIGNED_URL_EXPIRES)
+
+
+@_url_cache
+async def s3_presigned_url(*, bucket: str, key: str) -> str | None:
+    """
+    Generate a signed URL via the Supabase Storage SDK.
+
+    Supabase doesn't accept the S3 presigned format so we use the storage client.
+    Returns None if the object does not exist (404/400).
+    """
+    logger.debug(f"Generating presigned URL | {bucket}/{key}")
+    try:
+        client = await _get_supabase()
+        result = await client.storage.from_(bucket).create_signed_url(key, SIGNED_URL_EXPIRES)
+        return result["signedURL"]
+    except StorageException as exc:
+        exc_data = exc.args[0] if exc.args else {}
+        status_code = str(exc_data.get("statusCode", "")) if isinstance(exc_data, dict) else ""
+        if status_code in ("400", "404"):
+            logger.debug("Presigned URL: object not found | key={}", key)
+            return None
+        logger.error("Presigned URL generation failed | key={} error={}", key, exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not generate image URL",
+        ) from exc
+
+
 def upload_file(file: UploadFile, *, bucket: str, key: str):
     """Uploads a file to S3."""
     size_kb = (file.size or 0) / 1024
@@ -57,29 +86,10 @@ def upload_file(file: UploadFile, *, bucket: str, key: str):
         _s3.upload_fileobj(
             file.file, bucket, key, ExtraArgs={"ContentType": file.headers.get("Content-Type")}
         )
+        _url_cache.clear_cache()
     except ClientError as exc:
         logger.error("Failed to upload file | exc={}", exc)
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {exc}") from exc
-
-
-@AsyncTTL(time_to_live=SIGNED_URL_EXPIRES)
-async def s3_presigned_url(*, bucket: str, key: str):
-    """
-    Generate a signed URL via the Supabase Storage SDK.
-
-    supabase dosent like the s3 presigned format so wew have to use the client.
-    """
-    logger.debug(f"Generating presigned URL | {bucket}/{key}")
-    try:
-        client = await _get_supabase()
-        result = await client.storage.from_(bucket).create_signed_url(key, SIGNED_URL_EXPIRES)
-        return result["signedURL"]
-    except Exception as exc:
-        logger.error("Presigned URL generation failed | key={} error={}", key, exc)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not generate image URL",
-        ) from exc
 
 
 def download_file(*, bucket: str, key: str) -> bytes:

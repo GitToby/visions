@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className="navbar bg-base-100 shadow-sm">
@@ -32,6 +33,11 @@ export function Navbar() {
             >
               <li className="menu-title">
                 <span className="truncate">{user.email}</span>
+              </li>
+              <li>
+                <button type="button" onClick={() => void navigate("/profile")}>
+                  Profile
+                </button>
               </li>
               <li>
                 <button type="button" onClick={signOut}>

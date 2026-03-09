@@ -61,9 +61,29 @@ export function RoomViewPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <span className="loading loading-spinner loading-lg" />
-        </div>
+        <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 space-y-8">
+          <div className="skeleton h-3 w-48 rounded" />
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="skeleton h-6 w-32 rounded" />
+              <div className="skeleton h-8 w-32 rounded" />
+            </div>
+            <div className="skeleton aspect-video w-full rounded-box" />
+          </section>
+          <section>
+            <div className="skeleton h-3 w-16 rounded mb-4" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card card-border overflow-hidden">
+                  <div className="aspect-square skeleton rounded-none" />
+                  <div className="px-2 py-1.5">
+                    <div className="skeleton h-3 w-20 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     );
   }
@@ -115,38 +135,50 @@ export function RoomViewPage() {
 
           {room.image_url ? (
             <>
-              <figure
-                className="diff aspect-video rounded-box shadow-md border border-base-200"
-                tabIndex={0}
-              >
-                <div className="diff-item-1" role="img" tabIndex={0}>
-                  <img src={room.image_url} alt="Original" />
-                </div>
-                <div className="diff-item-2" role="img">
-                  {selectedJob?.image_url ? (
-                    <img
-                      src={selectedJob.image_url}
-                      alt={`${selectedJob.style} vision`}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-base-200 flex flex-col items-center justify-center gap-3 text-base-content/30">
-                      <Sparkles size={48} strokeWidth={1} />
-                      <span className="text-sm">
-                        {roomJobs.length > 0
-                          ? "Select a vision below"
-                          : "No visions yet"}
-                      </span>
+              {selectedJob?.image_url ? (
+                <>
+                  <figure
+                    className="diff aspect-video rounded-box shadow-md border border-base-200"
+                    tabIndex={0}
+                  >
+                    <div className="diff-item-1" role="img" tabIndex={0}>
+                      <img src={room.image_url} alt="Original" />
                     </div>
-                  )}
-                </div>
-                <div className="diff-resizer" />
-              </figure>
-
-              {/* Labels row */}
-              <div className="flex items-center justify-between mt-2 px-1 text-xs text-base-content/50">
-                <span>Original</span>
-                <span>{selectedJob?.style ?? "Vision"}</span>
-              </div>
+                    <div className="diff-item-2" role="img">
+                      <img
+                        src={selectedJob.image_url}
+                        alt={`${selectedJob.style} vision`}
+                      />
+                    </div>
+                    <div className="diff-resizer" />
+                  </figure>
+                  {/* Labels row */}
+                  <div className="flex items-center justify-between mt-2 px-1">
+                    <span className="badge badge-ghost badge-sm">Original</span>
+                    <span className="badge badge-primary badge-sm">
+                      {selectedJob.style}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <figure className="aspect-video rounded-box shadow-md border border-base-200 overflow-hidden">
+                    <img
+                      src={room.image_url}
+                      alt="Original"
+                      className="w-full h-full object-cover"
+                    />
+                  </figure>
+                  <div className="flex items-center justify-between mt-2 px-1">
+                    <span className="badge badge-ghost badge-sm">Original</span>
+                    <span className="text-xs text-base-content/40">
+                      {roomJobs.length > 0
+                        ? "Select a vision below"
+                        : "No visions yet"}
+                    </span>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <div className="aspect-video bg-base-200 rounded-box flex items-center justify-center text-base-content/30 border border-base-200">

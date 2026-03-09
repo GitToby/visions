@@ -151,8 +151,8 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
             email=self.email,
             name=self.name,
             picture=self.picture,
+            balance=self.balance,
             created_at=self.created_at,
-            updated_at=self.updated_at,
         )
 
 
@@ -163,8 +163,8 @@ class UserResponse(BaseModel):
     email: str
     name: str
     picture: str | None
+    balance: float
     created_at: datetime
-    updated_at: datetime | None
 
 
 # ─── Property ────────────────────────────────────────────────────────────────────
@@ -350,7 +350,18 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
         return f"generation-jobs/{self.room_id}/{self.style}"
 
     room: Room = Relationship(back_populates="generation_jobs")
-    original_job: GenerationJob | None = Relationship(back_populates="original_job")
+    # original_job: GenerationJob | None = Relationship(
+    #     back_populates="derived_jobs",
+    #     sa_relationship_kwargs={
+    #         # Use strings that match the class name and attribute
+    #         "foreign_keys": "GenerationJob.original_job_id",
+    #         "remote_side": "GenerationJob.id",
+    #     },
+    # )
+    # derived_jobs: list[GenerationJob] = Relationship(
+    #     back_populates="original_job",
+    #     sa_relationship_kwargs={"foreign_keys": "GenerationJob.original_job_id"},
+    # )
 
     async def to_response(self) -> GenerationJobResponse:
         return GenerationJobResponse(

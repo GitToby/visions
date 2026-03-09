@@ -144,9 +144,29 @@ export function PropertyDetailPage() {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <span className="loading loading-spinner loading-lg" />
-        </div>
+        <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10 space-y-10">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="skeleton h-3 w-32 rounded" />
+              <div className="skeleton h-8 w-56 rounded" />
+              <div className="skeleton h-4 w-40 rounded" />
+            </div>
+            <div className="skeleton h-10 w-40 rounded" />
+          </div>
+          <section>
+            <div className="skeleton h-5 w-16 rounded mb-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="card card-border bg-base-100 overflow-hidden">
+                  <div className="aspect-video skeleton rounded-none" />
+                  <div className="px-3 py-2">
+                    <div className="skeleton h-4 w-24 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     );
   }
