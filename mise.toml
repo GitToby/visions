@@ -1,7 +1,8 @@
 [tools]
-age = "latest"
-atlas = "latest"
-bun    = "latest"
-fnox = "latest"
+# devtools
 prek = "latest"
 uv     = "latest"
+bun    = "latest"
+# secrets
+fnox = "latest"
+age = "latest"
