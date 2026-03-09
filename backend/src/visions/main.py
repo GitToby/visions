@@ -1,10 +1,12 @@
 import time
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from pydantic import BaseModel
 
 from visions.api import auth, generation, property, styles
 from visions.core.config import SETTINGS
@@ -48,6 +50,10 @@ _static_dir = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
 
+class HealthCheckResponse(BaseModel):
+    status: Literal["ok"] = "ok"
+
+
 @app.get("/health", tags=["meta"])
-async def health() -> dict:
-    return {"status": "ok"}
+async def health() -> HealthCheckResponse:
+    return HealthCheckResponse()
