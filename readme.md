@@ -35,31 +35,31 @@ The AI uses the room photo as its structural foundation: it preserves the layout
 
 Styles are the design direction applied to rooms. Visions ships with a curated library of movements — Japandi, Industrial, Mid-Century Modern, Coastal, and others — each with a written description that guides the AI.
 
-You can also create **Custom Styles**: give a style a name, write a description of the aesthetic you have in mind, and optionally attach a reference image. Custom styles work identically to built-in ones once created.
-
 ### Generations
 
 When you trigger a generation, Visions creates one output for every Room × Style combination in the project. A project with 3 rooms and 2 styles produces 6 generated images.
 
 The generation pipeline sends each room photo and the style description to the Gemini image-to-image API. Results appear in the project's gallery view alongside the original photos, grouped by style.
 
+The concept of a "continue from here" allows users to refine generations by adding specifics via a wordy prompt and regenerating linking back to an original generation.
+
 ### Authentication
 
-Users sign in with Google. The frontend authenticates through Supabase Auth and receives a JWT. The backend validates that token on every request — no passwords, no session state on the server.
+Users sign in with Oauth. The frontend authenticates through Supabase Auth and receives a JWT. The backend validates that token on every request — no passwords, no session state on the server.
 
 ---
 
 ## Architecture
 
 ```
-Browser (React SPA)
-    │  Google OAuth → Supabase Auth → JWT
+Browser (SPA)
+    │  OAuth → Supabase Auth → JWT
     │  REST API calls (typed swr-openapi hooks)
     ▼
 FastAPI (Python)
     │  Validates JWT (PyJWT / Supabase secret)
     │  Stores data in PostgreSQL (SQLModel + Alembic)
-    │  Stores files in Supabase Storage
+    │  Stores files in Supabase s3 Storage
     │  Calls Gemini API for image generation
     ▼
 External Services
@@ -76,7 +76,7 @@ The frontend is a pure client-side SPA — no server-side rendering. The Vite bu
 | Layer         | Choice                                              |
 | ------------- | --------------------------------------------------- |
 | Frontend      | React 18, TypeScript strict, Vite, Bun              |
-| UI            | DaisyUI on Tailwind CSS, Lucide icons               |
+| UI            | DaisyUI 5 on Tailwind CSS, Lucide icons             |
 | Data fetching | swr-openapi (generated from FastAPI schema)         |
 | Backend       | FastAPI, Python 3.14, uv                            |
 | ORM / DB      | SQLModel, PostgreSQL, Alembic                       |
@@ -88,20 +88,5 @@ The frontend is a pure client-side SPA — no server-side rendering. The Vite bu
 ---
 
 ## Getting Started
-
-```bash
-# Install all dependencies
-mise run install
-
-# Start the database (Docker required for local dev)
-mise run docker:up
-mise run docker:migrate
-
-# Run dev servers
-mise run backend:dev   # http://localhost:8000
-mise run frontend:dev  # http://localhost:5173
-```
-
-Copy `.env.example` to `.env` and fill in your Supabase project URL, keys, and Gemini API key before starting.
 
 See `agents.md` for the full development guide: commands, code conventions, testing requirements, and contribution rules.
