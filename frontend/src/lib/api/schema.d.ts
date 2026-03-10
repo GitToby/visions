@@ -771,7 +771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenerationJobResponse"][];
+                    "application/json": components["schemas"]["GenerationJobResponse"];
                 };
             };
             /** @description Validation Error */

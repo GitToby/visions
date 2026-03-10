@@ -285,7 +285,11 @@ export function GenerateWizardModal({
               {error === "balance" && (
                 <div className="alert alert-error">
                   <span>No balance left for generation.</span>
-                  <Link to="/profile" className="btn btn-sm btn-outline" onClick={onClose}>
+                  <Link
+                    to="/profile"
+                    className="btn btn-sm btn-outline"
+                    onClick={onClose}
+                  >
                     Profile
                   </Link>
                 </div>

@@ -157,7 +157,10 @@ export function PropertyDetailPage() {
             <div className="skeleton h-5 w-16 rounded mb-4" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="card card-border bg-base-100 overflow-hidden">
+                <div
+                  key={i}
+                  className="card card-border bg-base-100 overflow-hidden"
+                >
                   <div className="aspect-video skeleton rounded-none" />
                   <div className="px-3 py-2">
                     <div className="skeleton h-4 w-24 rounded" />
