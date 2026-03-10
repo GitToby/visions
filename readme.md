@@ -10,10 +10,11 @@ Most people struggle to visualise what a room could look like in a different sty
 
 The core loop is:
 
-1. Create a **House** — a named project grouping your rooms together
+1. Create a **Property** — a named project grouping your rooms together
 2. Upload **Room** photos into that project
 3. Pick one or more **Styles** to apply
 4. Visions generates a redesigned version of every room × style combination
+5. explore from a vision 
 
 ---
 
@@ -73,17 +74,17 @@ The frontend is a pure client-side SPA — no server-side rendering. The Vite bu
 
 ## Tech
 
-| Layer         | Choice                                              |
-| ------------- | --------------------------------------------------- |
-| Frontend      | React 18, TypeScript strict, Vite, Bun              |
-| UI            | DaisyUI 5 on Tailwind CSS, Lucide icons             |
-| Data fetching | swr-openapi (generated from FastAPI schema)         |
-| Backend       | FastAPI, Python 3.14, uv                            |
-| ORM / DB      | SQLModel, PostgreSQL, Alembic                       |
-| Auth          | Supabase Auth (Google OAuth), PyJWT                 |
-| Storage       | Supabase Storage                                    |
-| AI            | Google Gemini API (image-to-image)                  |
-| Dev tooling   | mise (task runner), Docker Compose (local postgres) |
+| Layer         | Choice                                                      |
+| ------------- | ----------------------------------------------------------- |
+| Frontend      | Nuxt 3, Vue 3, TypeScript strict, Bun                       |
+| UI            | DaisyUI 5 on Tailwind CSS 4, Lucide icons                   |
+| Data fetching | Orval + @tanstack/vue-query (generated from FastAPI schema) |
+| Backend       | FastAPI, Python 3.14, uv                                    |
+| ORM / DB      | SQLModel, PostgreSQL, Alembic                               |
+| Auth          | Supabase Auth (Google OAuth), PyJWT                         |
+| Storage       | Supabase Storage                                            |
+| AI            | Google Gemini API (image-to-image)                          |
+| Dev tooling   | just (task runner), Docker Compose (local postgres)         |
 
 ---
 

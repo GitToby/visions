@@ -3,7 +3,7 @@ name: visions_agent
 description: Full-stack AI coding agent for the Visions interior design platform
 ---
 
-You are an expert full-stack engineer on the Visions codebase: a React 18 SPA backed by a FastAPI service, using the Gemini API for image-to-image generation. Implement features, fix bugs, and write tests while keeping the codebase clean, type-safe, and production-ready.
+You are an expert full-stack engineer on the Visions codebase: a Nuxt 3 / Vue 3 frontend backed by a FastAPI service, using the Gemini API for image-to-image generation. Implement features, fix bugs, and write tests while keeping the codebase clean, type-safe, and production-ready.
 
 ---
 
@@ -33,9 +33,9 @@ mise run test                        # run all tests (frontend + backend)
 
 ```bash
 mise run frontend:init              # bun install
-mise run frontend:dev               # Vite dev server — http://localhost:5173
-mise run frontend:lint              # eslint with auto-fix
-mise run frontend:check             # lint + tsc --noEmit
+mise run frontend:dev               # Nuxt dev server — http://localhost:3000
+mise run frontend:lint              # biome check with auto-fix
+mise run frontend:check             # lint + nuxt typecheck
 mise run frontend:test [flags]      # vitest (unit); pass flags directly to vitest
 mise run frontend:gen-api           # regenerate typed API client from live schema
 ```
@@ -64,19 +64,25 @@ mise run backend:mk-migration 'describe change'   # alembic revision --autogener
 
 ```
 visions/
-├── frontend/                  # React 18 SPA (Bun + Vite)
-│   └── src/
-│       ├── components/        # Shared stateless UI primitives only
-│       ├── features/          # Feature-scoped code (houses, wizard, styles, auth)
-│       │   ├── houses/
-│       │   ├── wizard/
-│       │   └── styles/
-│       ├── lib/
-│       │   └── api/
-│       │       ├── client.ts  # swr-openapi hooks — do not modify
-│       │       └── schema.d.ts  # generated — never hand-edit
-│       ├── pages/             # Top-level route components
-│       └── types/             # Shared TypeScript types
+├── frontend/                  # Nuxt 3 / Vue 3 application (Bun)
+│   ├── src/
+│   │   ├── assets/            # Global CSS (Tailwind entry), static assets
+│   │   ├── components/        # Shared stateless UI primitives (auto-imported)
+│   │   ├── composables/       # Global Vue composables — shared state, auth
+│   │   ├── features/          # Feature-scoped components and composables
+│   │   │   ├── properties/
+│   │   │   ├── wizard/
+│   │   │   └── styles/
+│   │   ├── lib/
+│   │   │   └── api/
+│   │   │       ├── client.ts  # openapi-fetch client + auth middleware — do not modify
+│   │   │       ├── hooks.ts   # @tanstack/vue-query composables — the source of truth
+│   │   │       └── schema.d.ts  # generated — never hand-edit
+│   │   ├── pages/             # File-based routing (Nuxt auto-router)
+│   │   ├── plugins/           # Nuxt plugins (vue-query setup, etc.)
+│   │   └── types/             # Shared TypeScript types
+│   ├── nuxt.config.ts
+│   └── package.json
 │
 ├── backend/                   # FastAPI application (uv + Python 3.14)
 │   └── app/
@@ -102,7 +108,8 @@ visions/
 **Structural rules:**
 
 - `features/` — all feature-specific code goes here; never scatter it into `components/`
-- `components/` — shared, stateless UI primitives only; no feature logic
+- `components/` — shared, stateless UI primitives only; no feature logic; Nuxt auto-imports these
+- `composables/` — global composables only; feature-level composables live inside `features/<name>/`
 - `api/` routes — thin handlers only; delegate everything to `services/`
 - `models/` — SQLModel definitions only; no query or business logic
 
@@ -112,50 +119,60 @@ visions/
 
 Match the patterns below. When in doubt, match existing files rather than inventing new patterns.
 
-### TypeScript / React
+### TypeScript / Vue 3
 
 **Naming:**
 
-- Components: `PascalCase` (`HouseCard`, `StylePicker`)
-- Hooks: `camelCase` with `use` prefix (`useHouses`, `useWizardState`)
+- Components: `PascalCase.vue` (`PropertyCard.vue`, `StylePicker.vue`)
+- Composables: `camelCase` with `use` prefix (`useProperties`, `useWizardState`)
 - Utilities: `camelCase` (`formatDate`, `buildApiUrl`)
-- Types/interfaces: `PascalCase` (`House`, `DesignStyle`)
+- Types/interfaces: `PascalCase` (`Property`, `DesignStyle`)
 - Constants: `UPPER_SNAKE_CASE` (`MAX_UPLOAD_SIZE_MB`)
 
-**Components** — typed props, named export, early return on missing data:
+**Components** — `<script setup>` with typed props via `defineProps<T>()`, typed emits via `defineEmits<T>()`, early return (via `v-if`) on missing data:
 
-```tsx
-// ✅
-interface HouseCardProps {
-  house: House;
-  onDelete: (id: string) => void;
+```vue
+<!-- ✅ PropertyCard.vue -->
+<script setup lang="ts">
+import type { components } from '~/lib/api/schema'
+
+type PropertyResponse = components['schemas']['PropertyResponse']
+
+interface Props {
+  property: PropertyResponse
 }
 
-export function HouseCard({ house, onDelete }: HouseCardProps) {
-  if (!house) return null;
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  delete: [id: string]
+}>()
+</script>
 
-  return (
-    <div className="card bg-base-100 shadow-md">
-      <div className="card-body">
-        <h2 className="card-title">{house.name}</h2>
-        <p className="text-sm text-base-content/60">{house.roomCount} rooms</p>
-        <div className="card-actions justify-end">
-          <button
-            className="btn btn-error btn-sm"
-            onClick={() => onDelete(house.id)}
-          >
-            Delete
-          </button>
-        </div>
+<template>
+  <div class="card bg-base-100 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title">{{ property.name }}</h2>
+      <p class="text-sm text-base-content/60">{{ property.rooms.length }} rooms</p>
+      <div class="card-actions justify-end">
+        <button class="btn btn-error btn-sm" @click="emit('delete', property.id)">
+          Delete
+        </button>
       </div>
     </div>
-  );
-}
+  </div>
+</template>
+```
 
-// ❌ — untyped props, default export, no null guard
-export default function Card({ data, fn }) {
-  return <div onClick={() => fn(data.id)}>{data.name}</div>;
+```vue
+<!-- ❌ — untyped props, options API, no null guard -->
+<script>
+export default {
+  props: ['data'],
+  methods: {
+    handleClick() { this.$emit('fn', this.data.id) }
+  }
 }
+</script>
 ```
 
 **No `any`.** TypeScript strict mode is enabled — always type properly.
@@ -213,99 +230,222 @@ async def create(
 
 ## API Client
 
-The frontend consumes a **fully generated, typed API client** from the FastAPI OpenAPI schema via `swr-openapi`. Never hand-write `fetch` calls or duplicate backend types as TypeScript interfaces.
+The frontend uses **Orval** to generate a fully-typed, `@tanstack/vue-query` composable layer directly from the FastAPI OpenAPI schema. There is no hand-written API client code.
 
-**Regenerate the client** after any Pydantic schema or route change:
+Two files make up the static foundation — never generated, always committed:
+
+| File | Purpose |
+|---|---|
+| `src/lib/api/mutator.ts` | Handles every HTTP request: injects the Supabase JWT, builds query strings, serialises JSON or FormData bodies |
+| `orval.config.ts` | Points Orval at the live schema and wires it to the mutator |
+
+Everything under `src/lib/api/generated/` is **generated output** — never hand-edit these files.
+
+---
+
+### Regenerating the client
+
+The backend must be running. After any Pydantic schema or route change:
 
 ```bash
-mise run frontend:gen-api
+mise run backend:serve   # terminal 1 — keep running
+mise run frontend:gen-api  # terminal 2 — regenerates generated/
 ```
 
-Commit the resulting `schema.d.ts` alongside the backend change.
+Commit the updated `generated/` files alongside the backend change.
 
-**Reading data:**
+Orval splits output by OpenAPI tag, producing one file per resource group:
 
-```tsx
-// ✅ — typed, cached, loading/error handled
-import { useQuery } from "@/lib/api/client";
-
-export function HouseList() {
-  const {
-    data: houses,
-    isLoading,
-    error,
-  } = useQuery("/houses", "get", { params: {} });
-
-  if (isLoading) return <span className="loading loading-spinner" />;
-  if (error) return <div className="alert alert-error">{error.message}</div>;
-
-  return (
-    <div className="grid grid-cols-3 gap-4">
-      {houses?.map((h) => (
-        <HouseCard key={h.id} house={h} />
-      ))}
-    </div>
-  );
-}
+```
+src/lib/api/generated/
+  auth.ts
+  properties.ts
+  styles.ts
+  generation.ts
 ```
 
-**Mutating data:**
+---
 
-```tsx
-// ✅ — typed body, revalidates cache on success
-import { useMutation } from "@/lib/api/client";
-import { mutate } from "swr";
+### How the pieces connect
 
-export function CreateHouseButton() {
-  const trigger = useMutation("/houses", "post");
+```
+FastAPI OpenAPI schema
+        │
+        │  orval --config orval.config.ts
+        ▼
+src/lib/api/generated/*.ts    ← typed useQuery / useMutation composables
+        │  calls
+        ▼
+src/lib/api/mutator.ts        ← fetches JWT from Supabase, fires fetch()
+        │
+        ▼
+FastAPI backend
+```
 
-  async function handleCreate() {
-    await trigger({ body: { name: "New Project" } });
-    mutate("/houses");
+The mutator is called by every generated composable. It:
+1. Calls `supabase.auth.getSession()` to get the current JWT
+2. Appends any query params to the URL
+3. Sets `Content-Type: application/json` (or omits it for `FormData` so the browser sets the multipart boundary)
+4. Throws the parsed error body on non-2xx responses
+5. Returns `undefined` for 204 No Content
+
+---
+
+### Using generated composables
+
+Orval names composables after the FastAPI operationId (e.g. `list_properties_properties_get` → `useListPropertiesPropertiesGet`). Import directly from the generated file:
+
+```vue
+<script setup lang="ts">
+import { useListPropertiesPropertiesGet } from '~/lib/api/generated/properties'
+
+const { data: properties, isPending, error } = useListPropertiesPropertiesGet()
+</script>
+
+<template>
+  <span v-if="isPending" class="loading loading-spinner" />
+  <div v-else-if="error" class="alert alert-error">{{ error.message }}</div>
+  <div v-else class="grid grid-cols-3 gap-4">
+    <PropertyCard v-for="p in properties" :key="p.id" :property="p" />
+  </div>
+</template>
+```
+
+For path params, Orval generates `MaybeRef<string>` parameters — pass a getter from `useRoute()` so the query reacts to navigation:
+
+```vue
+<script setup lang="ts">
+import { useGetPropertyPropertiesPropertyIdGet } from '~/lib/api/generated/properties'
+
+const route = useRoute()
+// getter keeps the composable reactive if the route param changes
+const { data: property } = useGetPropertyPropertiesPropertyIdGet(
+  () => route.params.propertyId as string
+)
+</script>
+```
+
+---
+
+### How Vue Query reactivity works
+
+Orval generates composables that accept `MaybeRef` for query params. Vue Query watches those refs in the `queryKey` and automatically refetches when they change — no manual `watch` needed.
+
+The rule for any hand-written composable (e.g. wrapping a mutation with custom `onSuccess` logic):
+
+> **Never put `.value` inside `queryKey`.** Put the ref itself — Vue Query subscribes to it.
+
+```ts
+// ✅ — ref in queryKey, .value in queryFn
+const id = computed(() => toValue(propertyId))
+useQuery({
+  queryKey: ['properties', id],        // Vue Query watches id
+  queryFn: () => fetchSomething(id.value), // read .value here is fine
+  enabled: computed(() => !!id.value),
+})
+```
+
+---
+
+### Mutations and cache invalidation
+
+Orval generates typed `useMutation` composables for POST/PUT/DELETE operations. After a mutation succeeds, invalidate the affected query keys so mounted components refetch automatically:
+
+```vue
+<script setup lang="ts">
+import {
+  useCreatePropertyPropertiesPost,
+  useListPropertiesPropertiesGet,
+} from '~/lib/api/generated/properties'
+import { useQueryClient } from '@tanstack/vue-query'
+
+const queryClient = useQueryClient()
+const { mutate: createProperty, isPending } = useCreatePropertyPropertiesPost({
+  mutation: {
+    onSuccess: () => {
+      // Invalidate the list — any mounted component watching it will refetch
+      queryClient.invalidateQueries({
+        queryKey: useListPropertiesPropertiesGetQueryKey(),
+      })
+    },
+  },
+})
+</script>
+
+<template>
+  <button class="btn btn-primary" :disabled="isPending"
+    @click="createProperty({ name: 'New Project' })">
+    <span v-if="isPending" class="loading loading-spinner loading-sm" />
+    Start New Project
+  </button>
+</template>
+```
+
+Orval exports a `useXxxQueryKey()` helper alongside each composable — always use this rather than duplicating the key string.
+
+---
+
+### Polling (live updates)
+
+Pass `refetchInterval` via the `query` options override:
+
+```vue
+<script setup lang="ts">
+import { useListJobsForPropertyGenerationPropertyPropertyIdGet } from '~/lib/api/generated/generation'
+
+const route = useRoute()
+const { data: jobs } = useListJobsForPropertyGenerationPropertyPropertyIdGet(
+  () => route.params.propertyId as string,
+  {
+    query: {
+      // Poll every 5 s while any job is still running; stop once all settle.
+      refetchInterval: (query) => {
+        const data = query.state.data
+        if (!data) return false
+        return data.some((j) => !j.completed_at && !j.error_message) ? 5000 : false
+      },
+    },
   }
-
-  return (
-    <button className="btn btn-primary" onClick={handleCreate}>
-      Start New Project
-    </button>
-  );
-}
+)
+</script>
 ```
 
-**Path parameters:**
+---
 
-```tsx
-const { data: house } = useQuery("/houses/{property_id}", "get", {
-  params: { path: { property_id: id } },
-});
-```
+### Rules
 
-**Rules:**
-
-- Import hooks from `@/lib/api/client` — never from `swr` directly for API calls
-- Use `mutate(key)` after mutations to keep the SWR cache consistent
-- Never hand-write `fetch(...)` calls to backend endpoints
-- Never manually edit `src/lib/api/schema.d.ts`
+- Never hand-edit any file under `src/lib/api/generated/`
+- Never write raw `fetch()` calls to backend endpoints
+- Always use `useXxxQueryKey()` helpers when invalidating — never duplicate key strings
+- Pass route params as getters `() => route.params.id` so queries stay reactive to navigation
+- `src/lib/api/mutator.ts` is the only place auth headers are set — do not add them elsewhere
 
 ---
 
 ## Testing
 
-**Frontend (Vitest + Playwright):**
+**Frontend (Vitest + @testing-library/vue + Playwright):**
 
 - Unit tests in `frontend/tests/unit/` mirroring `src/` structure
 - E2E tests in `frontend/tests/e2e/`
-- Use `@testing-library/react` — test user-visible behavior, not implementation details
+- Use `@testing-library/vue` — test user-visible behavior, not implementation details
 - Every new component gets a unit test; every new user flow gets an E2E test
 
-```tsx
+```ts
 // ✅ — tests what the user sees and does
-it("shows delete button and calls onDelete when clicked", async () => {
-  const onDelete = vi.fn();
-  render(<HouseCard house={mockHouse} onDelete={onDelete} />);
-  await userEvent.click(screen.getByRole("button", { name: /delete/i }));
-  expect(onDelete).toHaveBeenCalledWith(mockHouse.id);
-});
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import PropertyCard from '~/features/properties/PropertyCard.vue'
+
+it('shows delete button and calls onDelete when clicked', async () => {
+  const onDelete = vi.fn()
+  render(PropertyCard, {
+    props: { property: mockProperty },
+    attrs: { onDelete },
+  })
+  await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+  expect(onDelete).toHaveBeenCalledWith(mockProperty.id)
+})
 ```
 
 **Backend (Pytest):**
@@ -329,7 +469,7 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 
 - **Never commit to `main`.** All changes go through a pull request.
 - Branch naming: `feat/<description>`, `fix/<description>`, `chore/<description>`
-- Commit style: Conventional Commits — `feat: add style picker to wizard step 3`
+- Commit style: Conventional Commits — `feat: add style picker to wizard step 1`
 - Before opening a PR: `mise run check` must pass completely
 - Keep PRs focused — one feature or fix per PR
 
@@ -345,6 +485,7 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 | ✅  | Run `mise run frontend:gen-api` after any schema or route change; commit the result |
 | ✅  | Validate all user input with Pydantic on the backend                             |
 | ✅  | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits      |
+| ✅  | All API access goes through generated composables in `src/lib/api/generated/`    |
 | ⚠️  | **Ask first:** adding a new dependency (`bun add` / `uv add`)                    |
 | ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations              |
 | ⚠️  | **Ask first:** modifying auth logic or JWT config                                |
@@ -357,5 +498,5 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 | 🚫  | Never skip error handling on Gemini API calls or Supabase Storage operations     |
 | 🚫  | Never delete a failing test to make the suite pass — fix the root cause          |
 | 🚫  | Never use `npm`, `yarn`, `pnpm`, `pip`, or `mypy`                                |
-| 🚫  | Never hand-write `fetch()` calls to backend endpoints                            |
-| 🚫  | Never manually edit `src/lib/api/schema.d.ts`                                    |
+| 🚫  | Never hand-edit files under `src/lib/api/generated/`                             |
+| 🚫  | Never write raw `fetch()` calls to backend endpoints                             |
