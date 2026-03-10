@@ -14,7 +14,7 @@ services:
     # https://render.com/docs/deploys#build-command
     buildCommand: uv sync
     # preDeployCommand: uv run alembic upgrade head # needs a paid plan
-    startCommand: uv run uvicorn visions.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uv run uvicorn visions.main:app --host 0.0.0.0 --port 80
     healthCheckPath: /health
     domains:
       - api.visions.tobydevlin.com
