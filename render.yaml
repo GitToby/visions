@@ -36,7 +36,6 @@ services:
     name: visions-web
     rootDir: frontend
     runtime: static
-    plan: free
     domains:
       - api.visions.tobydevlin.com
     
