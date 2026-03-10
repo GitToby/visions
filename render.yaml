@@ -9,19 +9,24 @@ services:
     runtime: python
     region: frankfurt
     plan: free
-    
+    domains:
+      - api.visions.tobydevlin.com
+
     # uv is already installed in render:
     # https://render.com/docs/deploys#build-command
     buildCommand: uv sync
     # preDeployCommand: uv run alembic upgrade head # needs a paid plan
-    startCommand: uv run uvicorn visions.main:app --host 0.0.0.0 --port 80
+    # https://render.com/docs/web-services#port-binding
+    startCommand: uv run uvicorn visions.main:app --host 0.0.0.0 --port 10000
     healthCheckPath: /health
-    domains:
-      - api.visions.tobydevlin.com
+    
     buildFilter:
       paths:
         - backend/**
+      
     envVars:
+      - key: PYTHONPATH
+        value: src
       - key: DATABASE_PASSWORD
         sync: false
       - key: SUPABASE_SECRET_KEY
@@ -38,14 +43,16 @@ services:
     runtime: static
     domains:
       - api.visions.tobydevlin.com
-    
+
     # bun is already installed in render:
     # https://render.com/docs/deploys#build-command
     buildCommand: bun install && bun run build
-    
+    staticPublishPath: dist
+
     buildFilter:
       paths:
         - frontend/**
+    
     envVars:
       - key: VITE_SUPABASE_URL
         value: https://sutnrwodqzpfvuuboksu.supabase.co
