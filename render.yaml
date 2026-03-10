@@ -42,7 +42,7 @@ services:
     rootDir: frontend
     runtime: static
     domains:
-      - api.visions.tobydevlin.com
+      - visions.tobydevlin.com
 
     # bun is already installed in render:
     # https://render.com/docs/deploys#build-command
