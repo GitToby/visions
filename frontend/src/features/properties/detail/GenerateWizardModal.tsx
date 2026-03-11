@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ImageTile } from "@/components/ImageTile";
 import { StylePicker } from "@/features/styles/StylePicker";
 import { apiClient } from "@/lib/api/hooks";
 import type { components } from "@/lib/api/schema";
@@ -174,10 +175,10 @@ export function GenerateWizardModal({
                   </p>
                   <div className="flex gap-4 items-start">
                     <div className="w-32 rounded-box overflow-hidden border border-base-200 shadow-sm shrink-0">
-                      <img
+                      <ImageTile
                         src={baseImageUrl}
                         alt="Base vision"
-                        className="w-full aspect-square object-cover"
+                        aspect="square"
                       />
                     </div>
                     <div className="flex-1 pt-1">

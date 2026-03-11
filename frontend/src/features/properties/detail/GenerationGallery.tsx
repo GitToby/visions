@@ -1,3 +1,4 @@
+import { ImageTile } from "@/components/ImageTile";
 import { useGenerations } from "@/lib/api/hooks";
 import type { components } from "@/lib/api/schema";
 
@@ -16,41 +17,34 @@ function JobCard({ job }: { job: GenerationJobResponse }) {
 
   return (
     <div className="card bg-base-100 card-border overflow-hidden">
-      {/* Image area */}
-      <div className="relative aspect-video bg-base-200">
-        {status === "pending" && (
-          <div className="w-full h-full skeleton rounded-none" />
-        )}
-        {status === "completed" && (
-          <div className="w-full h-full bg-linear-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
+      <ImageTile
+        src={status === "completed" ? job.image_url : null}
+        alt={job.style}
+        aspect="video"
+        skeleton={status === "pending"}
+        error={job.error_message ?? null}
+        fallback={
+          <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
             <span className="text-4xl">✦</span>
             <span className="text-xs">Ready</span>
           </div>
-        )}
-        {status === "failed" && (
-          <div className="w-full h-full bg-error/10 flex items-center justify-center p-4">
-            <span className="text-error text-xs text-center">
-              {job.error_message}
-            </span>
-          </div>
-        )}
-
-        {/* Status badge */}
-        <div className="absolute top-2 right-2">
-          {status === "pending" && (
-            <span className="badge badge-sm badge-warning gap-1">
-              <span className="loading loading-dots loading-xs" />
-              Generating
-            </span>
-          )}
-          {status === "completed" && (
-            <span className="badge badge-sm badge-success">Done</span>
-          )}
-          {status === "failed" && (
-            <span className="badge badge-sm badge-error">Failed</span>
-          )}
-        </div>
-      </div>
+        }
+        badges={[
+          status === "pending"
+            ? {
+                content: (
+                  <>
+                    <span className="loading loading-dots loading-xs" />
+                    Generating
+                  </>
+                ),
+                variant: "warning",
+              }
+            : status === "completed"
+              ? { content: "Done", variant: "success" }
+              : { content: "Failed", variant: "error" },
+        ]}
+      />
 
       {/* Footer */}
       <div className="card-body card-sm py-2">

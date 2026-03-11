@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ImageTile } from "@/components/ImageTile";
 import { apiClient, useGenerations } from "@/lib/api/hooks";
 import type { components } from "@/lib/api/schema";
 
@@ -221,69 +222,78 @@ function RoomSlot({
         />
 
         {/* Image / placeholder area */}
-        <div className="relative aspect-video bg-base-200">
-          {state.status === "no-image" ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-warning">
-              <AlertTriangle size={36} strokeWidth={1.5} />
-              <span className="text-xs">No image uploaded</span>
-            </div>
-          ) : hasImage && preview ? (
-            <>
-              <img
-                src={preview}
-                alt={label}
-                className="w-full h-full object-cover"
-              />
-              {isUploading && (
-                <div className="absolute inset-0 bg-base-100/50 flex items-center justify-center">
-                  <span className="loading loading-spinner loading-lg text-primary" />
-                </div>
-              )}
-              {state.status === "uploaded" && (
-                <>
-                  <div className="absolute top-2 right-2">
-                    <span className="badge badge-success badge-sm gap-1 shadow">
-                      <CheckCircle size={10} />
-                      Uploaded
-                    </span>
-                  </div>
-                  {(completedCount > 0 || pendingCount > 0) && (
-                    <div className="absolute bottom-2 left-2 flex gap-1">
-                      {completedCount > 0 && (
-                        <span className="badge badge-sm badge-neutral gap-1 shadow">
-                          <Images size={9} />
-                          {completedCount}
-                        </span>
-                      )}
-                      {pendingCount > 0 && (
-                        <span className="badge badge-sm badge-warning gap-1 shadow">
-                          <span className="loading loading-dots loading-xs" />
-                          {pendingCount}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-              {state.status === "error" && (
-                <div className="absolute inset-0 bg-error/30 flex items-center justify-center p-2">
-                  <span className="text-error text-xs font-semibold text-center">
-                    {(state as { message: string }).message}
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div
-              className={`w-full h-full flex flex-col items-center justify-center gap-2 transition-colors ${
-                isDragOver ? "text-primary" : "text-base-content/30"
-              }`}
-            >
-              <Icon size={36} strokeWidth={1.5} />
-              <span className="text-xs">Drop photo here</span>
-            </div>
-          )}
-        </div>
+        <ImageTile
+          src={hasImage ? preview : null}
+          alt={label}
+          aspect="video"
+          loading={isUploading}
+          error={
+            state.status === "error"
+              ? (state as { message: string }).message
+              : null
+          }
+          badges={
+            state.status === "uploaded"
+              ? [
+                  {
+                    content: (
+                      <>
+                        <CheckCircle size={10} />
+                        Uploaded
+                      </>
+                    ),
+                    variant: "success",
+                    position: "top-right",
+                  },
+                  ...(completedCount > 0
+                    ? [
+                        {
+                          content: (
+                            <>
+                              <Images size={9} />
+                              {completedCount}
+                            </>
+                          ),
+                          variant: "neutral" as const,
+                          position: "bottom-left" as const,
+                        },
+                      ]
+                    : []),
+                  ...(pendingCount > 0
+                    ? [
+                        {
+                          content: (
+                            <>
+                              <span className="loading loading-dots loading-xs" />
+                              {pendingCount}
+                            </>
+                          ),
+                          variant: "warning" as const,
+                          position: "bottom-left" as const,
+                        },
+                      ]
+                    : []),
+                ]
+              : []
+          }
+          fallback={
+            state.status === "no-image" ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-warning">
+                <AlertTriangle size={36} strokeWidth={1.5} />
+                <span className="text-xs">No image uploaded</span>
+              </div>
+            ) : (
+              <div
+                className={`absolute inset-0 flex flex-col items-center justify-center gap-2 transition-colors ${
+                  isDragOver ? "text-primary" : "text-base-content/30"
+                }`}
+              >
+                <Icon size={36} strokeWidth={1.5} />
+                <span className="text-xs">Drop photo here</span>
+              </div>
+            )
+          }
+        />
 
         {/* Footer */}
         <div className="px-3 py-2 flex items-center justify-between min-h-9">

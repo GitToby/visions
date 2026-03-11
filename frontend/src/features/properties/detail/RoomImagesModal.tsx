@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
+import { ArrowRight, Sparkles, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { ImageTile } from "@/components/ImageTile";
 import { apiClient, useGenerations } from "@/lib/api/hooks";
 import type { components } from "@/lib/api/schema";
 
@@ -13,35 +14,6 @@ function deriveStatus(job: GenerationJobResponse): DerivedStatus {
   if (job.error_message) return "failed";
   if (job.completed_at) return "completed";
   return "pending";
-}
-
-function ImageWithExternalLink({
-  src,
-  alt,
-  className,
-}: {
-  src: string;
-  alt: string;
-  className?: string;
-}) {
-  return (
-    <div className="relative group">
-      <img
-        src={src}
-        alt={alt}
-        className={className ?? "w-full h-full object-cover"}
-      />
-      <a
-        href={src}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute top-2 right-2 btn btn-xs btn-square btn-ghost bg-base-100/70 opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Open in new tab"
-      >
-        <ExternalLink size={12} />
-      </a>
-    </div>
-  );
 }
 
 interface RoomImagesModalProps {
@@ -126,10 +98,11 @@ export function RoomImagesModal({
                 Original
               </p>
               <div className="w-72 rounded-box overflow-hidden border border-base-200 shadow-sm">
-                <ImageWithExternalLink
+                <ImageTile
                   src={room.image_url}
                   alt={room.label}
-                  className="w-full aspect-square object-cover"
+                  aspect="square"
+                  externalLink
                 />
               </div>
             </div>
@@ -174,46 +147,49 @@ export function RoomImagesModal({
                             key={job.id}
                             className="rounded-box overflow-hidden border border-base-200 shadow-sm"
                           >
-                            <div className="relative aspect-square bg-base-200">
-                              {status === "pending" && (
-                                <div className="w-full h-full skeleton rounded-none" />
-                              )}
-                              {status === "completed" && job.image_url && (
-                                <ImageWithExternalLink
-                                  src={job.image_url}
-                                  alt={`${style} generation`}
-                                  className="w-full h-full object-cover"
-                                />
-                              )}
-                              {status === "completed" && !job.image_url && (
-                                <div className="w-full h-full bg-linear-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
+                            <ImageTile
+                              src={
+                                status === "completed" ? job.image_url : null
+                              }
+                              alt={`${style} generation`}
+                              aspect="square"
+                              skeleton={status === "pending"}
+                              error={job.error_message ?? null}
+                              externalLink={
+                                status === "completed" && !!job.image_url
+                              }
+                              fallback={
+                                <div className="absolute inset-0 bg-linear-to-br from-primary/10 to-secondary/10 flex flex-col items-center justify-center gap-2 text-base-content/30">
                                   <span className="text-3xl">✦</span>
                                   <span className="text-xs">Ready</span>
                                 </div>
-                              )}
-                              {status === "failed" && (
-                                <div className="w-full h-full bg-error/10 flex items-center justify-center p-3">
-                                  <span className="text-error text-xs text-center">
-                                    {job.error_message}
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Status badge */}
-                              <div className="absolute top-2 right-2">
-                                {status === "pending" && (
-                                  <span className="badge badge-xs badge-warning gap-1">
-                                    <span className="loading loading-dots loading-xs" />
-                                    Generating
-                                  </span>
-                                )}
-                                {status === "failed" && (
-                                  <span className="badge badge-xs badge-error">
-                                    Failed
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                              }
+                              badges={[
+                                ...(status === "pending"
+                                  ? [
+                                      {
+                                        content: (
+                                          <>
+                                            <span className="loading loading-dots loading-xs" />
+                                            Generating
+                                          </>
+                                        ),
+                                        variant: "warning" as const,
+                                        size: "xs" as const,
+                                      },
+                                    ]
+                                  : []),
+                                ...(status === "failed"
+                                  ? [
+                                      {
+                                        content: "Failed",
+                                        variant: "error" as const,
+                                        size: "xs" as const,
+                                      },
+                                    ]
+                                  : []),
+                              ]}
+                            />
                           </div>
                         );
                       })}
