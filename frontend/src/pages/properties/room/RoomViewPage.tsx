@@ -1,6 +1,7 @@
 import { Sparkles, SquarePlus } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { BeforeAfterDiff } from "@/components/BeforeAfterDiff";
 import { Navbar } from "@/components/Navbar";
 import { GenerateWizardModal } from "@/features/properties/detail/generations/GenerateWizardModal";
 import { useProperty } from "@/lib/api/hooks";
@@ -195,30 +196,11 @@ export function RoomViewPage() {
 
           {room.image_url ? (
             selectedJob?.image_url ? (
-              <>
-                <figure
-                  className="diff aspect-video rounded-box shadow-md border border-base-200"
-                  tabIndex={0}
-                >
-                  <div className="diff-item-1" role="img" tabIndex={0}>
-                    <img src={room.image_url} alt="Original" />
-                  </div>
-                  <div className="diff-item-2" role="img">
-                    <img
-                      src={selectedJob.image_url}
-                      alt={`${selectedJob.style} vision`}
-                    />
-                  </div>
-                  <div className="diff-resizer" />
-                </figure>
-                {/* Labels row */}
-                <div className="flex items-center justify-between mt-2 px-1">
-                  <span className="badge badge-ghost badge-sm">Original</span>
-                  <span className="badge badge-primary badge-sm">
-                    {selectedJob.style}
-                  </span>
-                </div>
-              </>
+              <BeforeAfterDiff
+                beforeSrc={room.image_url}
+                afterSrc={selectedJob.image_url}
+                afterLabel={selectedJob.style}
+              />
             ) : (
               <>
                 <figure className="aspect-video rounded-box shadow-md border border-base-200 overflow-hidden">

@@ -1,18 +1,37 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BeforeAfterDiff } from "@/components/BeforeAfterDiff";
 import { useAuth } from "@/features/auth/AuthContext";
 import { LoginModal } from "@/features/auth/LoginModal";
+
+const EXAMPLES = [
+  {
+    room: "Bathroom",
+    style: "Industrial",
+    before: "/img/example-bathroom.webp",
+    after: "/img/example-bathroom-industrial.webp",
+  },
+  {
+    room: "Dining Room",
+    style: "Japandi",
+    before: "/img/example-dining-room.webp",
+    after: "/img/example-dining-room-japandi.webp",
+  },
+];
 
 export function LandingPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [activeExample, setActiveExample] = useState(0);
 
   useEffect(() => {
     if (session) {
       navigate("/properties", { replace: true });
     }
   }, [session, navigate]);
+
+  const ex = EXAMPLES[activeExample];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -37,35 +56,26 @@ export function LandingPage() {
             </button>
           </div>
 
-          {/* Before / After mockup */}
-          <div className="relative hidden lg:flex gap-3 items-end">
-            {/* Before card */}
-            <div className="flex-1 rounded-box overflow-hidden shadow-lg border border-base-300">
-              <div className="aspect-4/3 bg-linear-to-br from-base-300 to-base-200 flex items-end">
-                <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
-                  <span className="badge badge-neutral badge-sm">Before</span>
-                  <span className="text-xs text-base-content/50 truncate">
-                    Living Room
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Arrow */}
-            <div className="flex-none text-2xl text-primary font-bold pb-5 select-none">
-              →
-            </div>
-
-            {/* After card */}
-            <div className="flex-1 rounded-box overflow-hidden shadow-xl border border-primary/30 ring-2 ring-primary/20">
-              <div className="aspect-4/3 bg-linear-to-br from-primary/30 to-secondary/20 flex items-end">
-                <div className="w-full bg-base-100/80 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
-                  <span className="badge badge-primary badge-sm">After</span>
-                  <span className="text-xs text-base-content/50 truncate">
-                    Japandi
-                  </span>
-                </div>
-              </div>
+          {/* Before / After diff */}
+          <div className="lg:flex flex-col gap-3">
+            <BeforeAfterDiff
+              beforeSrc={ex.before}
+              afterSrc={ex.after}
+              beforeLabel={ex.room}
+              afterLabel={ex.style}
+            />
+            {/* Example switcher */}
+            <div className="flex justify-center gap-2">
+              {EXAMPLES.map((e, i) => (
+                <button
+                  key={e.room}
+                  type="button"
+                  onClick={() => setActiveExample(i)}
+                  className={`btn btn-xs ${i === activeExample ? "btn-primary" : "btn-ghost"}`}
+                >
+                  {e.room}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -100,7 +110,7 @@ export function LandingPage() {
               <div className="card-body items-center text-center gap-2">
                 <div className="badge badge-primary badge-lg">3</div>
                 <h3 className="card-title text-base">
-                  Pick a style & generate
+                  Pick a style &amp; generate
                 </h3>
                 <p className="text-sm text-base-content/60">
                   Choose from curated design styles and get AI-rendered results
