@@ -4,26 +4,30 @@ import { AuthProvider } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 
 const AuthCallbackPage = lazy(() =>
-  import("@/pages/AuthCallbackPage").then((m) => ({
+  import("@/pages/auth/AuthCallbackPage").then((m) => ({
     default: m.AuthCallbackPage,
   }))
 );
 const HomePage = lazy(() =>
-  import("@/pages/HomePage").then((m) => ({ default: m.HomePage }))
+  import("@/pages/properties/HomePage").then((m) => ({ default: m.HomePage }))
 );
 const LandingPage = lazy(() =>
   import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage }))
 );
 const ProfilePage = lazy(() =>
-  import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage }))
+  import("@/pages/profile/ProfilePage").then((m) => ({
+    default: m.ProfilePage,
+  }))
 );
 const PropertyDetailPage = lazy(() =>
-  import("@/pages/PropertyDetailPage").then((m) => ({
+  import("@/pages/properties/PropertyDetailPage").then((m) => ({
     default: m.PropertyDetailPage,
   }))
 );
 const RoomViewPage = lazy(() =>
-  import("@/pages/RoomViewPage").then((m) => ({ default: m.RoomViewPage }))
+  import("@/pages/properties/room/RoomViewPage").then((m) => ({
+    default: m.RoomViewPage,
+  }))
 );
 
 export default function App() {

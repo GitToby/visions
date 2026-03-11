@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import createClient, { type Middleware } from "openapi-fetch";
+import { queryKeys } from "@/lib/api/queryKeys";
 import type { components, paths } from "@/lib/api/schema";
 import config from "@/lib/config";
 import { supabase } from "@/lib/supabase";
@@ -20,7 +21,7 @@ apiClient.use(authMiddleware);
 
 export function useMe(enabled = true) {
   return useQuery({
-    queryKey: ["get", "/auth/me"],
+    queryKey: queryKeys.me,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/auth/me");
       if (error) throw error;
@@ -33,7 +34,7 @@ export function useMe(enabled = true) {
 
 export function useProperties() {
   return useQuery({
-    queryKey: ["get", "/properties"],
+    queryKey: queryKeys.properties,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/properties");
       if (error) throw error;
@@ -51,7 +52,7 @@ export function useProperty(
   }
 ) {
   return useQuery({
-    queryKey: ["get", "/properties/{property_id}", propertyId],
+    queryKey: queryKeys.property(propertyId),
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/properties/{property_id}", {
         params: { path: { property_id: propertyId } },
@@ -68,7 +69,7 @@ export function useProperty(
 
 export function useStyles() {
   return useQuery({
-    queryKey: ["get", "/styles"],
+    queryKey: queryKeys.styles,
     queryFn: async () => {
       const { data, error } = await apiClient.GET("/styles");
       if (error) throw error;
@@ -79,7 +80,7 @@ export function useStyles() {
 
 export function useGenerations(propertyId: string) {
   return useQuery({
-    queryKey: ["get", "/generation/properties/{property_id}", propertyId],
+    queryKey: queryKeys.generations(propertyId),
     queryFn: async () => {
       const { data, error } = await apiClient.GET(
         "/generation/property/{property_id}",

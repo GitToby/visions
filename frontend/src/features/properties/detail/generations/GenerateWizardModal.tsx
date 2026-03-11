@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ImageTile } from "@/components/ImageTile";
 import { StylePicker } from "@/features/styles/StylePicker";
 import { apiClient } from "@/lib/api/hooks";
+import { queryKeys } from "@/lib/api/queryKeys";
 import type { components } from "@/lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
@@ -87,7 +88,7 @@ export function GenerateWizardModal({
       return;
     }
     await queryClient.invalidateQueries({
-      queryKey: ["get", "/generation/properties/{property_id}", propertyId],
+      queryKey: queryKeys.generations(propertyId),
     });
     onClose();
   };

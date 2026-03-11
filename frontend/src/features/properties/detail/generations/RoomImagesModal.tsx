@@ -3,18 +3,12 @@ import { ArrowRight, Sparkles, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { ImageTile } from "@/components/ImageTile";
 import { apiClient, useGenerations } from "@/lib/api/hooks";
+import { queryKeys } from "@/lib/api/queryKeys";
 import type { components } from "@/lib/api/schema";
+import { deriveStatus } from "@/lib/generation";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];
-
-type DerivedStatus = "pending" | "completed" | "failed";
-
-function deriveStatus(job: GenerationJobResponse): DerivedStatus {
-  if (job.error_message) return "failed";
-  if (job.completed_at) return "completed";
-  return "pending";
-}
 
 interface RoomImagesModalProps {
   room: RoomResponse | null;
@@ -64,7 +58,7 @@ export function RoomImagesModal({
       body: [{ room_id: room.id, style, extra_context: prompt }],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["get", "/generation/property/{property_id}", propertyId],
+      queryKey: queryKeys.generations(propertyId),
     });
     setSubmitting(false);
     closeRefine();
