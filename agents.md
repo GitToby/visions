@@ -33,7 +33,7 @@ mise run test                        # run all tests (frontend + backend)
 
 ```bash
 mise run frontend:init              # bun install
-mise run frontend:dev               # Vite dev server — http://localhost:5173
+mise run frontend:dev               # Vite dev server — http://localhost:8088
 mise run frontend:lint              # eslint with auto-fix
 mise run frontend:check             # lint + tsc --noEmit
 mise run frontend:test [flags]      # vitest (unit); pass flags directly to vitest
@@ -114,49 +114,141 @@ Match the patterns below. When in doubt, match existing files rather than invent
 
 ### TypeScript / React
 
-**Naming:**
+### 1. Reusable Generic Component (`./src/components/`)
 
-- Components: `PascalCase` (`HouseCard`, `StylePicker`)
-- Hooks: `camelCase` with `use` prefix (`useHouses`, `useWizardState`)
-- Utilities: `camelCase` (`formatDate`, `buildApiUrl`)
-- Types/interfaces: `PascalCase` (`House`, `DesignStyle`)
-- Constants: `UPPER_SNAKE_CASE` (`MAX_UPLOAD_SIZE_MB`)
-
-**Components** — typed props, named export, early return on missing data:
+These are "dumb" components. They don't know about `Houses` or `Users`; they only care about standard HTML attributes and UI state.
 
 ```tsx
-// ✅
-interface HouseCardProps {
-  house: House;
-  onDelete: (id: string) => void;
+// src/components/Badge.tsx
+interface BadgeProps {
+  label: string;
+  variant?: "primary" | "secondary" | "ghost" | "error";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
-export function HouseCard({ house, onDelete }: HouseCardProps) {
+export function Badge({ label, variant = "primary", size = "md" }: BadgeProps) {
+  // Use DaisyUI classes for consistency
+  const className = `badge badge-${variant} badge-${size}`;
+
+  return <span className={className}>{label}</span>;
+}
+```
+
+### 2. Feature-Specific Composition (`./src/features/`)
+
+This is where we combine generic components with domain data. Notice how we use the generic `Badge` and `Button` inside a specific `HouseStatusCard`. Group these together in relevant feature folder.
+
+```tsx
+// src/features/houses/HouseStatusCard.tsx
+import { Badge } from "@/components/Badge"; // Reusable component
+import { House } from "@/types";
+
+interface HouseStatusCardProps {
+  house: House;
+  onStatusChange: (id: string, status: string) => void;
+}
+
+export function HouseStatusCard({
+  house,
+  onStatusChange,
+}: HouseStatusCardProps) {
   if (!house) return null;
 
+  const isAvailable = house.status === "available";
+
   return (
-    <div className="card bg-base-100 shadow-md">
+    <div className="card card-side bg-base-200 shadow-sm border border-base-300">
+      <figure className="w-1/3">
+        <img
+          src={house.imageUrl}
+          alt={house.name}
+          className="object-cover h-full"
+        />
+      </figure>
+
       <div className="card-body">
-        <h2 className="card-title">{house.name}</h2>
-        <p className="text-sm text-base-content/60">{house.roomCount} rooms</p>
-        <div className="card-actions justify-end">
+        <div className="flex justify-between items-start">
+          <h2 className="card-title text-lg">{house.name}</h2>
+          <Badge
+            label={house.status}
+            variant={isAvailable ? "primary" : "ghost"}
+          />
+        </div>
+
+        <p className="text-sm italic">{house.address}</p>
+
+        <div className="card-actions justify-end mt-4">
           <button
-            className="btn btn-error btn-sm"
-            onClick={() => onDelete(house.id)}
+            className="btn btn-outline btn-sm"
+            onClick={() => onStatusChange(house.id, "sold")}
+            disabled={!isAvailable}
           >
-            Delete
+            Mark as Sold
           </button>
         </div>
       </div>
     </div>
   );
 }
+```
 
-// ❌ — untyped props, default export, no null guard
-export default function Card({ data, fn }) {
-  return <div onClick={() => fn(data.id)}>{data.name}</div>;
+### 3. Logical Unit Splitting (`./src/features/`)
+
+When a component gets complex, we break it into smaller units within the same feature folder to keep the "Main" component semantic and readable.
+
+```tsx
+// src/features/houses/HouseList.tsx
+
+// Small logical unit: HouseRow
+interface HouseRowProps {
+  name: string;
+  price: number;
+}
+
+function HouseRow({ name, price }: HouseRowProps) {
+  return (
+    <tr>
+      <td>{name}</td>
+      <td className="font-mono text-right">${price.toLocaleString()}</td>
+    </tr>
+  );
+}
+
+// Main Semantic Component
+export function HouseList({ houses }: { houses: House[] }) {
+  if (houses.length === 0) {
+    return <div className="alert">No houses found in this area.</div>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="table table-zebra w-full">
+        <thead>
+          <tr>
+            <th>Property Name</th>
+            <th className="text-right">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {houses.map((house) => (
+            <HouseRow key={house.id} name={house.name} price={house.price} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 ```
+
+
+### Summary Table: Where does it go?
+
+| Component                  | Directory                     | Logic Type                                             |
+| -------------------------- | ----------------------------- | ------------------------------------------------------ |
+| `Button`, `Input`, `Modal` | `./src/components`            | **Generic UI:** Purely visual/functional.              |
+| `HouseCard`, `UserAvatar`  | `./src/features`              | **Domain-Specific:** Knows about specific data models. |
+| `useAuth`, `useCart`       | `./src/hooks`                 | **Global State:** Shared across the app.               |
+| `useHouseFilters`          | `./src/features/houses/hooks` | **Local Logic:** Specific to one feature.              |
 
 **No `any`.** TypeScript strict mode is enabled — always type properly.
 
@@ -337,25 +429,25 @@ async def test_create_house_success(client: AsyncClient, auth_headers: dict):
 
 ## Boundaries
 
-|     | Rule                                                                             |
-| --- | -------------------------------------------------------------------------------- |
-| ✅  | Run `mise run check` before marking any task done                                    |
-| ✅  | Keep route handlers thin — business logic goes in `services/`                    |
-| ✅  | Write tests for every new endpoint and component                                 |
+|     | Rule                                                                                |
+| --- | ----------------------------------------------------------------------------------- |
+| ✅  | Run `mise run check` before marking any task done                                   |
+| ✅  | Keep route handlers thin — business logic goes in `services/`                       |
+| ✅  | Write tests for every new endpoint and component                                    |
 | ✅  | Run `mise run frontend:gen-api` after any schema or route change; commit the result |
-| ✅  | Validate all user input with Pydantic on the backend                             |
-| ✅  | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits      |
-| ⚠️  | **Ask first:** adding a new dependency (`bun add` / `uv add`)                    |
-| ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations              |
-| ⚠️  | **Ask first:** modifying auth logic or JWT config                                |
-| ⚠️  | **Ask first:** changing the Gemini prompt or generation parameters               |
-| ⚠️  | **Ask first:** any change to `docker-compose.yml` or env variable names          |
-| 🚫  | Never commit secrets, API keys, or credentials                                   |
-| 🚫  | Never modify applied Alembic migrations in `alembic/versions/`                   |
-| 🚫  | Never write business logic in FastAPI route handlers                             |
-| 🚫  | Never use `any` in TypeScript                                                    |
-| 🚫  | Never skip error handling on Gemini API calls or Supabase Storage operations     |
-| 🚫  | Never delete a failing test to make the suite pass — fix the root cause          |
-| 🚫  | Never use `npm`, `yarn`, `pnpm`, `pip`, or `mypy`                                |
-| 🚫  | Never hand-write `fetch()` calls to backend endpoints                            |
-| 🚫  | Never manually edit `src/lib/api/schema.d.ts`                                    |
+| ✅  | Validate all user input with Pydantic on the backend                                |
+| ✅  | Use DaisyUI classes; avoid raw Tailwind utility soups when a component fits         |
+| ⚠️  | **Ask first:** adding a new dependency (`bun add` / `uv add`)                       |
+| ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations                 |
+| ⚠️  | **Ask first:** modifying auth logic or JWT config                                   |
+| ⚠️  | **Ask first:** changing the Gemini prompt or generation parameters                  |
+| ⚠️  | **Ask first:** any change to `docker-compose.yml` or env variable names             |
+| 🚫  | Never commit secrets, API keys, or credentials                                      |
+| 🚫  | Never modify applied Alembic migrations in `alembic/versions/`                      |
+| 🚫  | Never write business logic in FastAPI route handlers                                |
+| 🚫  | Never use `any` in TypeScript                                                       |
+| 🚫  | Never skip error handling on Gemini API calls or Supabase Storage operations        |
+| 🚫  | Never delete a failing test to make the suite pass — fix the root cause             |
+| 🚫  | Never use `npm`, `yarn`, `pnpm`, `pip`, or `mypy`                                   |
+| 🚫  | Never hand-write `fetch()` calls to backend endpoints                               |
+| 🚫  | Never manually edit `src/lib/api/schema.d.ts`                                       |
