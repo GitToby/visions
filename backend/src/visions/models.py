@@ -173,22 +173,21 @@ class UserResponse(BaseModel):
 
 
 class PropertyBase(SQLModel):
-    name: str = Field(max_length=255)
     description: str | None = Field(default=None)
     address: str | None = Field(default=None, max_length=500)
+
+
+class PropertyUpdate(PropertyBase):
+    name: str | None = Field(default=None, max_length=255)
+    publicly_accessible: bool | None = None
 
 
 class PropertyCreate(PropertyBase):
-    pass
+    name: str = Field(max_length=255)
+    publicly_accessible: bool = False
 
 
-class PropertyUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None)
-    address: str | None = Field(default=None, max_length=500)
-
-
-class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+class Property(PropertyCreate, UUIDModel, CreatedUpdatedAtMixin, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
 
     owner: User = Relationship(back_populates="properties")
@@ -348,7 +347,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
     @property
     @override
     def _image_key_prefix(self):
-        return f"generation-jobs/{self.room_id}/{self.style}/{self.id}"
+        return f"generation-jobs/{self.room_id}/{self.style}-{self.id}"
 
     room: Room = Relationship(back_populates="generation_jobs")
     submitter: User = Relationship(back_populates="generation_jobs")

@@ -10,7 +10,7 @@ Most people struggle to visualise what a room could look like in a different sty
 
 The core loop is:
 
-1. Create a **House** — a named project grouping your rooms together
+1. Create a **Property** — a named project grouping your rooms together
 2. Upload **Room** photos into that project
 3. Pick one or more **Styles** to apply
 4. Visions generates a redesigned version of every room × style combination
@@ -25,11 +25,21 @@ A property is the top-level unit of organisation. It represents a single propert
 
 The dashboard shows all your properties as a grid of cards. From there you can open an existing project or start a new one through the wizard.
 
+these can be seen at `/properties` and `/property?property_id={property_id}` in the ui. if no property id is provided, the ui shows a list of all properties.
+
+the properties page shows all properties and allows you to add new ones or view existing ones. Properties can be shared via a per-user (share via email) or link (share via link)
+
+The property page shows all rooms in the property and allows you to add new rooms or view existing ones. 
+
 ### Rooms
 
 Rooms are the source material. Inside a property you upload photos of the actual spaces you want to redesign — living room, kitchen, bedroom, and so on. Each uploaded photo becomes a Room.
 
 The AI uses the room photo as its structural foundation: it preserves the layout, proportions, windows, and architectural features while replacing the surface treatments and furnishings.
+
+these can be seen at `/room?id={room_id}` in the ui. If no room id is provided, the ui shows a "no room found" page. 
+
+The 
 
 ### Styles
 
@@ -69,8 +79,6 @@ External Services
 
 The frontend is a pure client-side SPA — no server-side rendering. The Vite build output is a static bundle that can be served from any CDN. All data fetching happens via typed hooks generated from the FastAPI OpenAPI schema.
 
----
-
 ## Tech
 
 | Layer         | Choice                                              |
@@ -85,7 +93,6 @@ The frontend is a pure client-side SPA — no server-side rendering. The Vite bu
 | AI            | Google Gemini API (image-to-image)                  |
 | Dev tooling   | mise (task runner), Docker Compose (local postgres) |
 
----
 
 ## Getting Started
 

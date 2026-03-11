@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from fastapi import HTTPException, status
 from loguru import logger
 from sqlalchemy.orm import selectinload
-from sqlmodel import func, select
+from sqlmodel import func, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from visions.models import Property, PropertyCreate, PropertyUpdate, Room
@@ -24,14 +24,25 @@ async def list_all(db: AsyncSession, caller_id: uuid.UUID) -> Sequence[Property]
     return properties
 
 
-async def get(db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID) -> Property | None:
+async def get(
+    db: AsyncSession, property_id: uuid.UUID, caller_id: uuid.UUID | None = None
+) -> Property | None:
     """Fetch a property by its ID, ensuring the caller has access."""
     logger.debug("Fetching property | property_id={} caller_id={}", property_id, caller_id)
     q = (
         select(Property)
-        .where(Property.id == property_id, Property.owner_id == caller_id)
+        .where(Property.id == property_id)
+        .where(Property.publicly_accessible == True)  # noqa: E712
         .options(selectinload(Property.rooms).selectinload(Room.generation_jobs))  # type: ignore[arg-type]
     )
+
+    if caller_id is not None:
+        q = q.where(
+            or_(
+                Property.owner_id == caller_id,
+                Property.publicly_accessible == True,  # noqa: E712
+            )
+        )
 
     result = await db.exec(q)
     return result.first()
@@ -56,6 +67,7 @@ async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyCreate)
         description=data.description,
         address=data.address,
         owner_id=owner_id,
+        publicly_accessible=data.publicly_accessible,
     )
     db.add(property)
     await db.commit()

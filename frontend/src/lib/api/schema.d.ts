@@ -295,12 +295,17 @@ export interface components {
         };
         /** PropertyCreate */
         PropertyCreate: {
-            /** Name */
-            name: string;
             /** Description */
             description?: string | null;
             /** Address */
             address?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Publicly Accessible
+             * @default false
+             */
+            publicly_accessible: boolean;
         };
         /** PropertyResponse */
         PropertyResponse: {
@@ -332,12 +337,14 @@ export interface components {
         };
         /** PropertyUpdate */
         PropertyUpdate: {
-            /** Name */
-            name?: string | null;
             /** Description */
             description?: string | null;
             /** Address */
             address?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Publicly Accessible */
+            publicly_accessible?: boolean | null;
         };
         /**
          * RoomResponse
