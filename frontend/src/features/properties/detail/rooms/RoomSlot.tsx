@@ -170,8 +170,9 @@ export function RoomSlot({
           <X size={12} />
         </button>
       )}
-      <button
-        type="button"
+      {/* biome-ignore lint/a11y/useSemanticElements: card with role="button" needed for complex layout */}
+      <div
+        role="button"
         tabIndex={isBusy ? -1 : 0}
         className={`card card-border bg-base-100 overflow-hidden select-none transition-all text-left w-full ${
           isBusy
@@ -272,7 +273,7 @@ export function RoomSlot({
             <span className="loading loading-spinner loading-xs text-base-content/40" />
           )}
         </div>
-      </button>
+      </div>
     </div>
   );
 }
