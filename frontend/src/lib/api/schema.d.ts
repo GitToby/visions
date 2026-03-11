@@ -761,7 +761,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenerationJobCreate"];
+                "application/json": components["schemas"]["GenerationJobCreate"][];
             };
         };
         responses: {
@@ -771,7 +771,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GenerationJobResponse"];
+                    "application/json": components["schemas"]["GenerationJobResponse"][];
                 };
             };
             /** @description Validation Error */

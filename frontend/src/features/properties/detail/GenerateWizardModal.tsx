@@ -79,13 +79,10 @@ export function GenerateWizardModal({
         ...(context ? { extra_context: context } : {}),
       }))
     );
-    const results = await Promise.all(
-      jobs.map((body) => apiClient.POST("/generation", { body }))
-    );
-    const failed = results.find((r) => r.error);
+    const result = await apiClient.POST("/generation", { body: jobs });
     setGenerating(false);
-    if (failed) {
-      setError(failed.response?.status === 402 ? "balance" : "generic");
+    if (result.error) {
+      setError(result.response?.status === 402 ? "balance" : "generic");
       return;
     }
     await queryClient.invalidateQueries({

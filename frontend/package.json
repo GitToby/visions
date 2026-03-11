@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "generate:api": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/schema.d.ts"
+    "generate:api": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/schema.d.ts",
+    "generate:api-file": "openapi-typescript ../resources/openapi.json -o src/lib/api/schema.d.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",

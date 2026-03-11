@@ -22,7 +22,6 @@ from visions.models import (
     User,
 )
 from visions.services import ai
-from visions.services import room as room_service
 
 
 async def list_all(
@@ -62,37 +61,29 @@ async def get_or_404(db: AsyncSession, job_id: uuid.UUID, caller_id: uuid.UUID) 
     return job
 
 
-async def create(db: AsyncSession, *, data: GenerationJobCreate, caller: User) -> GenerationJob:
-    """Create a single pending GenerationJob."""
+async def create_many(
+    db: AsyncSession, *, data: list[GenerationJobCreate], caller: User
+) -> list[GenerationJob]:
     caller_id = caller.id
-    logger.debug(
-        "Creating generation job | room_id={} style={} caller_id={}",
-        data.room_id,
-        data.style,
-        caller_id,
-    )
-
-    await room_service.get_or_404(db, room_id=data.room_id, caller_id=caller_id)
-
-    if data.style not in BUILTIN_STYLES_KV:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Unknown style: {data.style}"
+    jobs = [
+        GenerationJob(
+            room_id=job.room_id,
+            original_job_id=None,  # todo: make this a property which allows updates to the underlying generation
+            style=job.style,
+            submitter_id=caller_id,
+            extra_context=job.extra_context,
         )
-
-    job = GenerationJob(
-        room_id=data.room_id,
-        original_job_id=None,  # todo: make this a property which allows updates to the underlying generation
-        style=data.style,
-        submitter_id=caller_id,
-        extra_context=data.extra_context,
-    )
-    db.add(job)
-    caller.balance -= SETTINGS.generation_cost
+        for job in data
+    ]
+    db.add_all(jobs)
     db.add(caller)
+    caller.balance -= SETTINGS.generation_cost * len(jobs)
     await db.commit()
-    await db.refresh(job)
-    logger.debug("Job created | job_id={}", job.id)
-    return job
+    await db.refresh(caller)
+    for job in jobs:
+        await db.refresh(job)
+    logger.debug("Jobs created | job_ids={}", [job.id for job in jobs])
+    return jobs
 
 
 async def delete(db: AsyncSession, *, job: GenerationJob) -> None:
@@ -100,6 +91,10 @@ async def delete(db: AsyncSession, *, job: GenerationJob) -> None:
     await job.delete_image()
     await db.delete(job)
     await db.commit()
+
+
+async def submit_many(job_ids: list[uuid.UUID]):
+    await asyncio.gather(*[submit_job(id_) for id_ in job_ids])
 
 
 async def submit_job(job_id: uuid.UUID):

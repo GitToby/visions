@@ -13,3 +13,5 @@ check: frontend::check backend::check
 lint: frontend::lint backend::lint check
 
 test: frontend::test backend::test
+
+gen-api-schema: backend::generate-openapi frontend::gen-api

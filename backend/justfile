@@ -10,17 +10,17 @@ lint: init
 check: init lint
     uv run pyrefly check src
 
-test *flags:  check
-    uv run pytest -v {{flags}}
+test *flags: check
+    uv run pytest -v {{ flags }}
 
 mk-migration name: check
-    uv run alembic revision --autogenerate -m "{{name}}"
+    uv run alembic revision --autogenerate -m "{{ name }}"
 
 migrate: check
     uv run alembic upgrade head
 
 serve: check
     PYTHONPATH=src uv run uvicorn visions.main:app --host 0.0.0.0 --port 8000 --reload
-    
-serve-prod: check
-    PYTHONPATH=src uv run uvicorn visions.main:app --host 0.0.0.0 --port 8000 --reload
+
+generate-openapi: check
+    PYTHONPATH=src uv run scripts/generate_openapi.py

@@ -13,7 +13,7 @@ test *flags: check
     bun run test {{ flags }}
 
 gen-api: init
-    bun run generate:api
+    bun run generate:api-file
 
 dev: init lint check
     bun run dev

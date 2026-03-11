@@ -89,7 +89,7 @@ export function RoomImagesModal({
     if (!prompt || submitting) return;
     setSubmitting(true);
     await apiClient.POST("/generation", {
-      body: { room_id: room.id, style, extra_context: prompt },
+      body: [{ room_id: room.id, style, extra_context: prompt }],
     });
     await queryClient.invalidateQueries({
       queryKey: ["get", "/generation/property/{property_id}", propertyId],

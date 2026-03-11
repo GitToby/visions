@@ -12,22 +12,22 @@ from visions.services import generation as generation_service
 router = APIRouter(prefix="/generation", tags=["generation"])
 
 
-@router.post("", response_model=GenerationJobResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post("", response_model=list[GenerationJobResponse], status_code=status.HTTP_202_ACCEPTED)
 async def start_generation_for_room(
     db: DBSession,
     current_user: CurrentUser,
     background_tasks: BackgroundTasks,
-    payload: GenerationJobCreate,
-) -> GenerationJobResponse:
+    payload: list[GenerationJobCreate],
+) -> list[GenerationJobResponse]:
     """Submit and generate an AI generation request for a room in the property."""
-    if current_user.balance < SETTINGS.generation_cost:
+    if current_user.balance < (SETTINGS.generation_cost * len(payload)):
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Insufficient balance"
         )
-    job = await generation_service.create(db, data=payload, caller=current_user)
-    background_tasks.add_task(generation_service.submit_job, job.id)
+    job = await generation_service.create_many(db, data=payload, caller=current_user)
+    background_tasks.add_task(generation_service.submit_many, [j.id for j in job])
 
-    return await job.to_response()
+    return await asyncio.gather(*[j.to_response() for j in job])
 
 
 @router.get("/property/{property_id}", response_model=list[GenerationJobResponse])

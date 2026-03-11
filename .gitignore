@@ -6,6 +6,7 @@
 **/wheels/
 **/*.egg-info
 **/.ruff_cache
+resources/openapi.json
 
 # Virtual environments
 backend/.venv
