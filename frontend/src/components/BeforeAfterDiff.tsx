@@ -30,11 +30,11 @@ export function BeforeAfterDiff({
         </div>
         <div className="diff-resizer" />
       </figure>
-      <span className="badge badge-neutral badge-sm absolute top-3 left-3 z-10 pointer-events-none">
+      <span className="badge badge-soft badge-neutral badge-sm absolute top-3 left-3 z-10 pointer-events-none">
         Original
       </span>
       {afterLabel && (
-        <span className="badge badge-primary badge-sm absolute top-3 right-3 z-10 pointer-events-none">
+        <span className="badge badge-soft badge-primary badge-sm absolute top-3 right-3 z-10 pointer-events-none">
           {afterLabel}
         </span>
       )}

@@ -158,31 +158,18 @@ export function RoomImagesModal({
                                   <span className="text-xs">Ready</span>
                                 </div>
                               }
-                              badges={[
-                                ...(status === "pending"
-                                  ? [
-                                      {
-                                        content: (
-                                          <>
-                                            <span className="loading loading-dots loading-xs" />
-                                            Generating
-                                          </>
-                                        ),
-                                        variant: "warning" as const,
-                                        size: "xs" as const,
-                                      },
-                                    ]
-                                  : []),
-                                ...(status === "failed"
-                                  ? [
-                                      {
-                                        content: "Failed",
-                                        variant: "error" as const,
-                                        size: "xs" as const,
-                                      },
-                                    ]
-                                  : []),
-                              ]}
+                              topRight={
+                                status === "pending" ? (
+                                  <span className="badge badge-xs badge-warning shadow gap-1">
+                                    <span className="loading loading-dots loading-xs" />
+                                    Generating
+                                  </span>
+                                ) : status === "failed" ? (
+                                  <span className="badge badge-xs badge-error shadow">
+                                    Failed
+                                  </span>
+                                ) : undefined
+                              }
                             />
                           </div>
                         );

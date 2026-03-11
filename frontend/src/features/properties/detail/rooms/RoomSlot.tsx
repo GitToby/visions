@@ -199,50 +199,33 @@ export function RoomSlot({
           alt={label}
           aspect="video"
           loading={isUploading}
+          externalLink
           error={state.status === "error" ? state.message : null}
-          badges={
-            state.status === "uploaded"
-              ? [
-                  {
-                    content: (
-                      <>
-                        <CheckCircle size={10} />
-                        Uploaded
-                      </>
-                    ),
-                    variant: "success",
-                    position: "top-right",
-                  },
-                  ...(completedCount > 0
-                    ? [
-                        {
-                          content: (
-                            <>
-                              <Images size={9} />
-                              {completedCount}
-                            </>
-                          ),
-                          variant: "neutral" as const,
-                          position: "bottom-left" as const,
-                        },
-                      ]
-                    : []),
-                  ...(pendingCount > 0
-                    ? [
-                        {
-                          content: (
-                            <>
-                              <span className="loading loading-dots loading-xs" />
-                              {pendingCount}
-                            </>
-                          ),
-                          variant: "warning" as const,
-                          position: "bottom-left" as const,
-                        },
-                      ]
-                    : []),
-                ]
-              : []
+          topRight={
+            state.status === "uploaded" ? (
+              <span className="badge badge-sm badge-success shadow">
+                <CheckCircle size={10} />
+              </span>
+            ) : undefined
+          }
+          bottomLeft={
+            state.status === "uploaded" &&
+            (completedCount > 0 || pendingCount > 0) ? (
+              <>
+                {completedCount > 0 && (
+                  <span className="badge badge-sm badge-neutral shadow gap-1">
+                    <Images size={9} />
+                    {completedCount}
+                  </span>
+                )}
+                {pendingCount > 0 && (
+                  <span className="badge badge-sm badge-warning shadow gap-1">
+                    <span className="loading loading-dots loading-xs" />
+                    {pendingCount}
+                  </span>
+                )}
+              </>
+            ) : undefined
           }
           fallback={
             state.status === "no-image" ? (

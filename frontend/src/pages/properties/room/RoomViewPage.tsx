@@ -4,78 +4,12 @@ import { Link, useParams } from "react-router-dom";
 import { BeforeAfterDiff } from "@/components/BeforeAfterDiff";
 import { Navbar } from "@/components/Navbar";
 import { GenerateWizardModal } from "@/features/properties/detail/generations/GenerateWizardModal";
+import { VisionCard } from "@/features/properties/detail/generations/VisionCard";
 import { useProperty } from "@/lib/api/hooks";
 import type { components } from "@/lib/api/schema";
 import { deriveStatus } from "@/lib/generation";
 
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];
-
-interface VisionCardProps {
-  job: GenerationJobResponse;
-  isSelected: boolean;
-  onSelect: () => void;
-}
-
-function VisionCard({ job, isSelected, onSelect }: VisionCardProps) {
-  const status = deriveStatus(job);
-  const isSelectable = status === "completed";
-
-  return (
-    <button
-      type="button"
-      className={`card overflow-hidden transition-all text-left ${
-        isSelectable ? "cursor-pointer" : "cursor-default"
-      } ${
-        isSelected
-          ? "ring-2 ring-primary shadow-md"
-          : "card-border hover:shadow-md hover:border-primary/40"
-      }`}
-      onClick={() => {
-        if (isSelectable) onSelect();
-      }}
-    >
-      <div className="relative aspect-square bg-base-200">
-        {status === "pending" && (
-          <div className="w-full h-full skeleton rounded-none" />
-        )}
-        {status === "completed" && job.image_url && (
-          <img
-            src={job.image_url}
-            alt={job.style}
-            className="w-full h-full object-cover"
-          />
-        )}
-        {status === "failed" && (
-          <div className="w-full h-full bg-error/10 flex items-center justify-center p-3">
-            <span className="text-error text-xs text-center">
-              {job.error_message ?? "Failed"}
-            </span>
-          </div>
-        )}
-        {status === "pending" && (
-          <div className="absolute top-1.5 right-1.5">
-            <span className="badge badge-xs badge-warning gap-1">
-              <span className="loading loading-dots loading-xs" />
-            </span>
-          </div>
-        )}
-        {status === "failed" && (
-          <div className="absolute top-1.5 right-1.5">
-            <span className="badge badge-xs badge-error">Failed</span>
-          </div>
-        )}
-      </div>
-      <div className="px-2 py-1.5 flex items-center justify-between">
-        <p className="text-xs font-medium truncate">{job.style}</p>
-        {isSelected && (
-          <span className="badge badge-xs badge-primary ml-1 shrink-0">
-            Viewing
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
 
 export function RoomViewPage() {
   const { propertyId = "", roomId = "" } = useParams<{

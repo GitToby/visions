@@ -1,27 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 
-export type BadgeVariant =
-  | "neutral"
-  | "success"
-  | "warning"
-  | "error"
-  | "primary";
-export type BadgePosition =
-  | "top-right"
-  | "top-left"
-  | "bottom-right"
-  | "bottom-left";
-
-export interface ImageBadge {
-  content: ReactNode;
-  variant?: BadgeVariant;
-  /** Defaults to "sm" */
-  size?: "xs" | "sm";
-  /** Defaults to "top-right" */
-  position?: BadgePosition;
-}
-
 export interface ImageTileProps {
   src?: string | null;
   alt?: string;
@@ -35,8 +14,11 @@ export interface ImageTileProps {
   error?: string | null;
   /** Show a hover-revealed "open in new tab" button (requires parent or self to have group) */
   externalLink?: boolean;
-  /** Badges overlaid on the image */
-  badges?: ImageBadge[];
+  /** Content rendered in each corner of the image */
+  topLeft?: ReactNode;
+  topRight?: ReactNode;
+  bottomLeft?: ReactNode;
+  bottomRight?: ReactNode;
   /**
    * Content rendered when there is no src and no skeleton state.
    * Use absolute positioning in the fallback to fill the tile, e.g.:
@@ -47,13 +29,6 @@ export interface ImageTileProps {
   className?: string;
 }
 
-const POSITION_CLASSES: Record<BadgePosition, string> = {
-  "top-right": "top-2 right-2",
-  "top-left": "top-2 left-2",
-  "bottom-right": "bottom-2 right-2",
-  "bottom-left": "bottom-2 left-2",
-};
-
 export function ImageTile({
   src,
   alt = "",
@@ -62,18 +37,14 @@ export function ImageTile({
   loading = false,
   error,
   externalLink = false,
-  badges = [],
+  topLeft,
+  topRight,
+  bottomLeft,
+  bottomRight,
   fallback,
   className,
 }: ImageTileProps) {
   const aspectClass = aspect === "square" ? "aspect-square" : "aspect-video";
-
-  // Group badges by position so we can render them in the same flex row
-  const byPosition = new Map<BadgePosition, ImageBadge[]>();
-  for (const badge of badges) {
-    const pos = badge.position ?? "top-right";
-    byPosition.set(pos, [...(byPosition.get(pos) ?? []), badge]);
-  }
 
   return (
     <div
@@ -106,36 +77,34 @@ export function ImageTile({
         </div>
       )}
 
-      {/* External link button — hover-revealed, top-right */}
-      {externalLink && src && (
-        <a
-          href={src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute top-2 right-2 btn btn-xs btn-square btn-ghost bg-base-100/70 opacity-0 group-hover:opacity-100 transition-opacity"
-          title="Open in new tab"
-        >
-          <ExternalLink size={12} />
-        </a>
-      )}
-
-      {/* Badges */}
-      {[...byPosition.entries()].map(([pos, posBadges]) => (
-        <div
-          key={pos}
-          className={`absolute ${POSITION_CLASSES[pos]} flex gap-1`}
-        >
-          {posBadges.map((badge, i) => (
-            <span
-              // eslint-disable-next-line react/no-array-index-key
-              key={i}
-              className={`badge badge-${badge.size ?? "sm"} badge-${badge.variant ?? "neutral"} shadow gap-1`}
+      {/* Corners */}
+      {(topLeft || (externalLink && src)) && (
+        <div className="absolute top-2 left-2 flex gap-1">
+          {externalLink && src && (
+            <a
+              href={src}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-xs btn-square opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Open in new tab"
             >
-              {badge.content}
-            </span>
-          ))}
+              <ExternalLink size={12} />
+            </a>
+          )}
+          {topLeft}
         </div>
-      ))}
+      )}
+      {topRight && (
+        <div className="absolute top-2 right-2 flex gap-1">{topRight}</div>
+      )}
+      {bottomLeft && (
+        <div className="absolute bottom-2 left-2 flex gap-1">{bottomLeft}</div>
+      )}
+      {bottomRight && (
+        <div className="absolute bottom-2 right-2 flex gap-1">
+          {bottomRight}
+        </div>
+      )}
     </div>
   );
 }
