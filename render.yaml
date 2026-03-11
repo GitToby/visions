@@ -28,6 +28,7 @@ services:
       - fromGroup: visions-urls
       - key: PYTHONPATH
         value: src
+      # set in Render Dashboard
       - key: DATABASE_PASSWORD
         sync: false
       - key: SUPABASE_SECRET_KEY
@@ -54,6 +55,11 @@ services:
       paths:
         - frontend/**
 
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
     envVars:
       - fromGroup: visions-urls
       - key: VITE_SUPABASE_URL
@@ -73,7 +79,7 @@ envVarGroups:
       - key: FRONTEND_URL
         value: https://visions.tobydevlin.com
       - key: CORS_ORIGINS
-        value: '["https://visions.tobydevlin.com"]'
+        value: '["https://visions.tobydevlin.com", "https://visions-wev.onrender.com"]'
 
   - name: visions-urls-preview
     envVars:
@@ -86,4 +92,4 @@ envVarGroups:
       - key: FRONTEND_URL
         value: https://visions.tobydevlin.com
       - key: CORS_ORIGINS
-        value: '["https://visions.tobydevlin.com"]'
+        value: '["https://visions.tobydevlin.com", "https://visions-wev.onrender.com"]'
