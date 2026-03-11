@@ -1,48 +1,59 @@
 [project]
 name = "backend"
-version = "0.1.0"
 description = "Visions – Interior Design Ideator API"
 requires-python = ">=3.14.0"
+dynamic = ["version"]
+
 dependencies = [
-    # api
-    "fastapi>=0.135.1",
-    "uvicorn[standard]>=0.41.0",
-    "python-multipart>=0.0.22",
-    "pydantic-settings>=2.13.1",
-    # database
-    "psycopg[binary,pool]>=3.2.0",
-    "sqlmodel>=0.0.37",
-    "supabase>=2.0.0",
-    # agent
-    "pydantic-ai-slim[google]>=1.65.0",
-    "google-genai>=1.65.0",
-    # storage
-    "boto3>=1.42.60",
-    "pillow>=12.1.1",
-    # security
-    "pyjwt[crypto]>=2.10.0",
-    # utilities
-    "loguru>=0.7.3",
-    "greenlet>=3.3.2",
-    "cachetools>=6.2.6",
-    "async-cache>=2.0.0",
+  "async-cache>=2.0.0",
+  # storage
+  "boto3>=1.42.60",
+  "cachetools>=6.2.6",
+  # api
+  "fastapi>=0.135.1",
+  "google-genai>=1.65.0",
+  "greenlet>=3.3.2",
+  # utilities
+  "loguru>=0.7.3",
+  "pillow>=12.1.1",
+  # database
+  "psycopg[binary,pool]>=3.2.0",
+  # agent
+  "pydantic-ai-slim[google]>=1.65.0",
+  "pydantic-settings>=2.13.1",
+  # security
+  "pyjwt[crypto]>=2.10.0",
+  "python-multipart>=0.0.22",
+  "sqlmodel>=0.0.37",
+  "supabase>=2.0.0",
+  "uvicorn[standard]>=0.41.0",
 ]
 
 [dependency-groups]
 dev = [
-    # testing
-    "pytest>=9.0.2",
-    "pytest-asyncio>=1.3.0",
-    "pytest-cov>=7.0.0",
-    # linting
-    "pyrefly>=0.54.0",
-    "ruff>=0.15.4",
-    # types
-    "types-boto3[essential]>=1.42.60",
-    # migrations
-    "alembic>=1.18.4",
-    "moto[all]>=5.1.21",
+    # build
+  "setuptools-scm>=9.2.2",
+  # migrations
+  "alembic>=1.18.4",
+  "moto[all]>=5.1.21",
+  # linting
+  "pyrefly>=0.54.0",
+  # testing
+  "pytest>=9.0.2",
+  "pytest-asyncio>=1.3.0",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.15.4",
+  # types
+  "types-boto3[essential]>=1.42.60",
 ]
+
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+root = ".."
+version_file = "src/visions/_version.py"
 
 [tool.ruff]
 line-length = 100

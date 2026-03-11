@@ -11,10 +11,7 @@ from pydantic import BaseModel
 from visions.api import auth, generation, property, styles
 from visions.core.config import SETTINGS
 
-app = FastAPI(
-    title=SETTINGS.app_name,
-    version="0.1.0",
-)
+app = FastAPI(title=SETTINGS.app_name, version=SETTINGS.version, debug=SETTINGS.debug)
 
 
 app = FastAPI()

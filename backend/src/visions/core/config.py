@@ -2,6 +2,12 @@ from loguru import logger
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+try:
+    # version is generated using setuptoold scm on sync. This might not exist.
+    from ._version import __version__
+except ImportError:
+    __version__ = "-"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
@@ -9,6 +15,7 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "Visions API"
     debug: bool = False
+    version: str = __version__
     cors_origins: list[str] = ["http://localhost:5173"]
     api_base_url: str = "http://localhost:8000"
 
