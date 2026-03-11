@@ -131,7 +131,7 @@ class UserBase(SQLModel):
     email: str = Field(unique=True, index=True, max_length=255)
     name: str = Field(max_length=255)
     picture: str | None = None
-    balance: float = 0
+    balance: float = Field(default=10, sa_column_kwargs={"server_default": text("10")})
 
 
 class User(UserBase, CreatedUpdatedAtMixin, table=True):
@@ -144,6 +144,7 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
     id: uuid.UUID = Field(primary_key=True)
 
     properties: list[Property] = Relationship(back_populates="owner")
+    generation_jobs: list[GenerationJob] = Relationship(back_populates="submitter")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -350,6 +351,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
         return f"generation-jobs/{self.room_id}/{self.style}"
 
     room: Room = Relationship(back_populates="generation_jobs")
+    submitter: User = Relationship(back_populates="generation_jobs")
     # original_job: GenerationJob | None = Relationship(
     #     back_populates="derived_jobs",
     #     sa_relationship_kwargs={

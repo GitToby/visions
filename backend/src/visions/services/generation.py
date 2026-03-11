@@ -68,7 +68,7 @@ async def create_many(
     jobs = [
         GenerationJob(
             room_id=job.room_id,
-            original_job_id=None,  # todo: make this a property which allows updates to the underlying generation
+            original_job_id=job.original_job_id,
             style=job.style,
             submitter_id=caller_id,
             extra_context=job.extra_context,
@@ -113,7 +113,15 @@ async def submit_job(job_id: uuid.UUID):
             if room is None:
                 raise ValueError(f"Room {job.room_id} not found")
 
-            img_url = await room.get_image_url()
+            if job.original_job_id:
+                original_job = await get(db, job.original_job_id, caller_id=None)
+                if original_job is None:
+                    raise ValueError(f"Original job {job.original_job_id} not found, links broken.")
+
+                img_url = await original_job.get_image_url()
+            else:
+                img_url = await room.get_image_url()
+
             if not img_url:
                 raise ValueError(f"Room {job.room_id} has no image URL")
 
@@ -147,6 +155,8 @@ async def submit_job(job_id: uuid.UUID):
 
         except Exception as exc:
             logger.exception("Job failed | job_id={} error={}", job_id, exc)
+            submitter = job.submitter
+            submitter.balance += 1
             job.error_message = str(exc)
 
         await db.commit()

@@ -6,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from visions.models import User
 
 
-async def get_by_id(db: AsyncSession, user_id: str) -> User | None:
+async def get_by_id(db: AsyncSession, user_id: uuid.UUID) -> User | None:
     logger.debug("Fetching user | user_id={}", user_id)
-    return await db.get(User, uuid.UUID(user_id))
+    return await db.get(User, user_id)
 
 
 # todo: type the payload here
