@@ -74,3 +74,16 @@ envVarGroups:
         value: https://visions.tobydevlin.com
       - key: CORS_ORIGINS
         value: '["https://visions.tobydevlin.com"]'
+
+  - name: visions-urls-preview
+    envVars:
+      # API 
+      - key: API_BASE_URL
+        value: https://api.visions.tobydevlin.com
+      - key: VITE_API_BASE_URL
+        value: https://api.visions.tobydevlin.com
+      # UI
+      - key: FRONTEND_URL
+        value: https://visions.tobydevlin.com
+      - key: CORS_ORIGINS
+        value: '["https://visions.tobydevlin.com"]'
