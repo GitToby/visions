@@ -4,18 +4,25 @@ import { BeforeAfterDiff } from "@/components/BeforeAfterDiff";
 import { useAuth } from "@/features/auth/AuthContext";
 import { LoginModal } from "@/features/auth/LoginModal";
 
-const EXAMPLES = [
-  {
-    room: "Bathroom",
-    style: "Industrial",
-    before: "/img/example-bathroom.webp",
-    after: "/img/example-bathroom-industrial.webp",
-  },
+const ROOMS = [
   {
     room: "Dining Room",
-    style: "Japandi",
     before: "/img/example-dining-room.webp",
-    after: "/img/example-dining-room-japandi.webp",
+    styles: [
+      {
+        style: "Industrial",
+        after: "/img/example-dining-room-industrial.webp",
+      },
+      { style: "Japandi", after: "/img/example-dining-room-japandi.webp" },
+    ],
+  },
+  {
+    room: "Bathroom",
+    before: "/img/example-bathroom.webp",
+    styles: [
+      { style: "Industrial", after: "/img/example-bathroom-industrial.webp" },
+      { style: "Japandi", after: "/img/example-bathroom-japandi.webp" },
+    ],
   },
 ];
 
@@ -23,7 +30,8 @@ export function LandingPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
-  const [activeExample, setActiveExample] = useState(0);
+  const [activeRoom, setActiveRoom] = useState(0);
+  const [activeStyle, setActiveStyle] = useState(0);
 
   useEffect(() => {
     if (session) {
@@ -31,7 +39,8 @@ export function LandingPage() {
     }
   }, [session, navigate]);
 
-  const ex = EXAMPLES[activeExample];
+  const room = ROOMS[activeRoom];
+  const ex = { ...room, ...room.styles[activeStyle] };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -64,18 +73,36 @@ export function LandingPage() {
               beforeLabel={ex.room}
               afterLabel={ex.style}
             />
-            {/* Example switcher */}
-            <div className="flex justify-center gap-2">
-              {EXAMPLES.map((e, i) => (
-                <button
-                  key={e.room}
-                  type="button"
-                  onClick={() => setActiveExample(i)}
-                  className={`btn btn-xs ${i === activeExample ? "btn-primary" : "btn-ghost"}`}
-                >
-                  {e.room}
-                </button>
-              ))}
+            {/* Room + style switcher */}
+            <div className="flex justify-center items-center gap-2">
+              <div className="join">
+                {ROOMS.map((r, i) => (
+                  <button
+                    key={r.room}
+                    type="button"
+                    onClick={() => {
+                      setActiveRoom(i);
+                      setActiveStyle(0);
+                    }}
+                    className={`btn btn-xs join-item ${i === activeRoom ? "btn-primary" : "btn-ghost"}`}
+                  >
+                    {r.room}
+                  </button>
+                ))}
+              </div>
+              <div className="divider divider-horizontal "></div>
+              <div className="join">
+                {room.styles.map((s, i) => (
+                  <button
+                    key={s.style}
+                    type="button"
+                    onClick={() => setActiveStyle(i)}
+                    className={`btn btn-xs join-item ${i === activeStyle ? "btn-neutral" : "btn-ghost"}`}
+                  >
+                    {s.style}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
