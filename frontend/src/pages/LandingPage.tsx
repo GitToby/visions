@@ -74,7 +74,7 @@ export function LandingPage() {
               afterLabel={ex.style}
             />
             {/* Room + style switcher */}
-            <div className="flex justify-center items-center gap-2">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-2">
               <div className="join">
                 {ROOMS.map((r, i) => (
                   <button
@@ -90,7 +90,7 @@ export function LandingPage() {
                   </button>
                 ))}
               </div>
-              <div className="divider divider-horizontal "></div>
+              <div className="divider divider-horizontal hidden sm:flex"></div>
               <div className="join">
                 {room.styles.map((s, i) => (
                   <button
