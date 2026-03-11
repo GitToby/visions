@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     app_name: str = "Visions API"
     debug: bool = False
     version: str = __version__
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = ["http://localhost:8088"]
     api_base_url: str = "http://localhost:8000"
 
     # Database (NeonDB PostgreSQL connection string)
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
         )
 
     # Frontend
-    frontend_url: str = "http://localhost:5173"
+    frontend_url: str = "http://localhost:8088"
 
     # Supabase
     supabase_project_id: str = "sutnrwodqzpfvuuboksu"
