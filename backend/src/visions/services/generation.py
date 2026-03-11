@@ -118,6 +118,11 @@ async def submit_job(job_id: uuid.UUID):
                 if original_job is None:
                     raise ValueError(f"Original job {job.original_job_id} not found, links broken.")
 
+                logger.debug(
+                    "Original job found | job_id={} room_id={}",
+                    job.original_job_id,
+                    original_job.room_id,
+                )
                 img_url = await original_job.get_image_url()
             else:
                 img_url = await room.get_image_url()
@@ -130,6 +135,13 @@ async def submit_job(job_id: uuid.UUID):
 
             img_url_ = ImageUrl(url=img_url)
             style = BUILTIN_STYLES_KV[job.style]
+            logger.debug(
+                "Creating prompt | job_id={} room_id={} style={} img_url={}",
+                job_id,
+                job.room_id,
+                job.style,
+                img_url,
+            )
             prompt = ai.system_prompt(
                 style.name, style.description, extra_context=job.extra_context
             )
