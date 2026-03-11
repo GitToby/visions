@@ -19,11 +19,11 @@ services:
     # https://render.com/docs/web-services#port-binding
     startCommand: uv run uvicorn visions.main:app --host 0.0.0.0 --port 10000
     healthCheckPath: /health
-    
+
     buildFilter:
       paths:
         - backend/**
-      
+
     envVars:
       - fromGroup: visions-urls
       - key: PYTHONPATH
@@ -53,18 +53,18 @@ services:
     buildFilter:
       paths:
         - frontend/**
-    
+
     envVars:
       - fromGroup: visions-urls
       - key: VITE_SUPABASE_URL
         value: https://sutnrwodqzpfvuuboksu.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
-        sync: false
+        value: sb_publishable_l6XbltlqEPGu-hm18EGx-Q_qjLMqPS4
 
 envVarGroups:
   - name: visions-urls
     envVars:
-      # API 
+      # API
       - key: API_BASE_URL
         value: https://api.visions.tobydevlin.com
       - key: VITE_API_BASE_URL
@@ -77,7 +77,7 @@ envVarGroups:
 
   - name: visions-urls-preview
     envVars:
-      # API 
+      # API
       - key: API_BASE_URL
         value: https://api.visions.tobydevlin.com
       - key: VITE_API_BASE_URL
