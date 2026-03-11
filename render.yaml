@@ -25,6 +25,7 @@ services:
         - backend/**
       
     envVars:
+      - fromGroup: visions-urls
       - key: PYTHONPATH
         value: src
       - key: DATABASE_PASSWORD
@@ -54,9 +55,22 @@ services:
         - frontend/**
     
     envVars:
+      - fromGroup: visions-urls
       - key: VITE_SUPABASE_URL
         value: https://sutnrwodqzpfvuuboksu.supabase.co
       - key: VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
         sync: false
+
+envVarGroups:
+  - name: visions-urls
+    envVars:
+      # API 
+      - key: API_BASE_URL
+        value: https://api.visions.tobydevlin.com
       - key: VITE_API_BASE_URL
-        sync: false
+        value: https://api.visions.tobydevlin.com
+      # UI
+      - key: FRONTEND_URL
+        value: https://visions.tobydevlin.com
+      - key: CORS_ORIGINS
+        value: '["https://visions.tobydevlin.com"]'

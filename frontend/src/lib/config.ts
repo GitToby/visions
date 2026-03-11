@@ -1,3 +1,4 @@
+// env vars are set in mise.toml
 const authConfig = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
