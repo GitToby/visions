@@ -1,3 +1,4 @@
+from loguru import logger
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -58,3 +59,4 @@ class Settings(BaseSettings):
 
 
 SETTINGS = Settings()  # pyright: ignore[reportCallIssue]
+logger.info(f"Loaded settings: {SETTINGS}")
