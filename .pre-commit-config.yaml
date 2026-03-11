@@ -15,9 +15,8 @@ repos:
         files: ^frontend/src/
         pass_filenames: false
 
-      - id: frontend-oapi
-        name: frontend generate api
-        entry: just frontend::gen-api
+      - id: gen-oapi
+        name: generate openapi schema
+        entry: just gen-api-schema
         language: system
-        files: ^frontend/src/
         pass_filenames: false
