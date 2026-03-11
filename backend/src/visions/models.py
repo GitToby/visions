@@ -348,7 +348,7 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
     @property
     @override
     def _image_key_prefix(self):
-        return f"generation-jobs/{self.room_id}/{self.style}"
+        return f"generation-jobs/{self.room_id}/{self.style}/{self.id}"
 
     room: Room = Relationship(back_populates="generation_jobs")
     submitter: User = Relationship(back_populates="generation_jobs")
