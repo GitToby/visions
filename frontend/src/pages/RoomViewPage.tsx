@@ -1,10 +1,10 @@
 import { Sparkles, SquarePlus } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Navbar } from "../components/Navbar";
-import { GenerateWizardModal } from "../features/properties/detail/GenerateWizardModal";
-import { useProperty } from "../lib/api/hooks";
-import type { components } from "../lib/api/schema";
+import { Navbar } from "@/components/Navbar";
+import { GenerateWizardModal } from "@/features/properties/detail/GenerateWizardModal";
+import { useProperty } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];
 
@@ -134,52 +134,50 @@ export function RoomViewPage() {
           </div>
 
           {room.image_url ? (
-            <>
-              {selectedJob?.image_url ? (
-                <>
-                  <figure
-                    className="diff aspect-video rounded-box shadow-md border border-base-200"
-                    tabIndex={0}
-                  >
-                    <div className="diff-item-1" role="img" tabIndex={0}>
-                      <img src={room.image_url} alt="Original" />
-                    </div>
-                    <div className="diff-item-2" role="img">
-                      <img
-                        src={selectedJob.image_url}
-                        alt={`${selectedJob.style} vision`}
-                      />
-                    </div>
-                    <div className="diff-resizer" />
-                  </figure>
-                  {/* Labels row */}
-                  <div className="flex items-center justify-between mt-2 px-1">
-                    <span className="badge badge-ghost badge-sm">Original</span>
-                    <span className="badge badge-primary badge-sm">
-                      {selectedJob.style}
-                    </span>
+            selectedJob?.image_url ? (
+              <>
+                <figure
+                  className="diff aspect-video rounded-box shadow-md border border-base-200"
+                  tabIndex={0}
+                >
+                  <div className="diff-item-1" role="img" tabIndex={0}>
+                    <img src={room.image_url} alt="Original" />
                   </div>
-                </>
-              ) : (
-                <>
-                  <figure className="aspect-video rounded-box shadow-md border border-base-200 overflow-hidden">
+                  <div className="diff-item-2" role="img">
                     <img
-                      src={room.image_url}
-                      alt="Original"
-                      className="w-full h-full object-cover"
+                      src={selectedJob.image_url}
+                      alt={`${selectedJob.style} vision`}
                     />
-                  </figure>
-                  <div className="flex items-center justify-between mt-2 px-1">
-                    <span className="badge badge-ghost badge-sm">Original</span>
-                    <span className="text-xs text-base-content/40">
-                      {roomJobs.length > 0
-                        ? "Select a vision below"
-                        : "No visions yet"}
-                    </span>
                   </div>
-                </>
-              )}
-            </>
+                  <div className="diff-resizer" />
+                </figure>
+                {/* Labels row */}
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <span className="badge badge-ghost badge-sm">Original</span>
+                  <span className="badge badge-primary badge-sm">
+                    {selectedJob.style}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <figure className="aspect-video rounded-box shadow-md border border-base-200 overflow-hidden">
+                  <img
+                    src={room.image_url}
+                    alt="Original"
+                    className="w-full h-full object-cover"
+                  />
+                </figure>
+                <div className="flex items-center justify-between mt-2 px-1">
+                  <span className="badge badge-ghost badge-sm">Original</span>
+                  <span className="text-xs text-base-content/40">
+                    {roomJobs.length > 0
+                      ? "Select a vision below"
+                      : "No visions yet"}
+                  </span>
+                </div>
+              </>
+            )
           ) : (
             <div className="aspect-video bg-base-200 rounded-box flex items-center justify-center text-base-content/30 border border-base-200">
               <span className="text-sm">No room image uploaded</span>

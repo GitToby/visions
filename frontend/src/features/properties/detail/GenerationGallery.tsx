@@ -1,5 +1,5 @@
-import { useGenerations } from "../../../lib/api/hooks";
-import type { components } from "../../../lib/api/schema";
+import { useGenerations } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];
 

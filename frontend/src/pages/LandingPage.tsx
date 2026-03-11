@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../features/auth/AuthContext";
-import { LoginModal } from "../features/auth/LoginModal";
+import { useAuth } from "@/features/auth/AuthContext";
+import { LoginModal } from "@/features/auth/LoginModal";
 
 export function LandingPage() {
   const { session } = useAuth();

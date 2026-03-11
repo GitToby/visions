@@ -2,9 +2,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { apiClient } from "../../../lib/api/hooks";
-import type { components } from "../../../lib/api/schema";
-import { StylePicker } from "../../styles/StylePicker";
+import { StylePicker } from "@/features/styles/StylePicker";
+import { apiClient } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 

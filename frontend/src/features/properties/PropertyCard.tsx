@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { components } from "../../lib/api/schema";
+import type { components } from "@/lib/api/schema";
 
 type PropertyResponse = components["schemas"]["PropertyResponse"];
 

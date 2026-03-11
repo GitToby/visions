@@ -3,11 +3,11 @@ import { MapPin, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Navbar } from "../components/Navbar";
-import { GenerateWizardModal } from "../features/properties/detail/GenerateWizardModal";
-import { RoomUploader } from "../features/properties/detail/RoomUploader";
-import { apiClient, useProperty } from "../lib/api/hooks";
-import type { components } from "../lib/api/schema";
+import { Navbar } from "@/components/Navbar";
+import { GenerateWizardModal } from "@/features/properties/detail/GenerateWizardModal";
+import { RoomUploader } from "@/features/properties/detail/RoomUploader";
+import { apiClient, useProperty } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 

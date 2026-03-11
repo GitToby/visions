@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { useStyles } from "../../lib/api/hooks";
-import type { components } from "../../lib/api/schema";
+import { useStyles } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type DesignStyle = components["schemas"]["DesignStyle"];
 

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiClient } from "../../lib/api/hooks";
+import { apiClient } from "@/lib/api/hooks";
 
 interface NewProjectModalProps {
   open: boolean;

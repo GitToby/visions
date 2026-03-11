@@ -1,0 +1,6 @@
+.nuxt
+.next
+dist
+.output
+
+tsconfig.tsbuildinfo

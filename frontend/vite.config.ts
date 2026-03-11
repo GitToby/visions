@@ -11,6 +11,17 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
   },

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Navbar } from "../components/Navbar";
-import { NewProjectModal } from "../features/properties/NewProjectModal";
-import { PropertyGrid } from "../features/properties/PropertyGrid";
+import { Navbar } from "@/components/Navbar";
+import { NewProjectModal } from "@/features/properties/NewProjectModal";
+import { PropertyGrid } from "@/features/properties/PropertyGrid";
 
 export function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);

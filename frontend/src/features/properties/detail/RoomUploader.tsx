@@ -17,8 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient, useGenerations } from "../../../lib/api/hooks";
-import type { components } from "../../../lib/api/schema";
+import { apiClient, useGenerations } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 

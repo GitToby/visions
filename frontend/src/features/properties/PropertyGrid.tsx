@@ -1,5 +1,5 @@
-import { useProperties } from "../../lib/api/hooks";
-import { PropertyCard } from "./PropertyCard";
+import { PropertyCard } from "@/features/properties/PropertyCard";
+import { useProperties } from "@/lib/api/hooks";
 
 export function PropertyGrid() {
   const { data: properties, isLoading, error } = useProperties();

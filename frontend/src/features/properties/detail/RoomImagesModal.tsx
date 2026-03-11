@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { apiClient, useGenerations } from "../../../lib/api/hooks";
-import type { components } from "../../../lib/api/schema";
+import { apiClient, useGenerations } from "@/lib/api/hooks";
+import type { components } from "@/lib/api/schema";
 
 type RoomResponse = components["schemas"]["RoomResponse"];
 type GenerationJobResponse = components["schemas"]["GenerationJobResponse"];

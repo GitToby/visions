@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Navbar } from "../components/Navbar";
-import { useAuth } from "../features/auth/AuthContext";
+import { Navbar } from "@/components/Navbar";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export function ProfilePage() {
   const { user } = useAuth();

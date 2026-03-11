@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import createClient, { type Middleware } from "openapi-fetch";
-import config from "../config";
-import { supabase } from "../supabase";
-import type { components, paths } from "./schema";
+import type { components, paths } from "@/lib/api/schema";
+import config from "@/lib/config";
+import { supabase } from "@/lib/supabase";
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
