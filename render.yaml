@@ -79,7 +79,7 @@ envVarGroups:
       - key: FRONTEND_URL
         value: https://visions.tobydevlin.com
       - key: CORS_ORIGINS
-        value: '["https://visions.tobydevlin.com", "https://visions-wev.onrender.com"]'
+        value: '["https://visions.tobydevlin.com", "https://visions-web.onrender.com"]'
 
   - name: visions-urls-preview
     envVars:
