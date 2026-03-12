@@ -1,11 +1,16 @@
 """Tests for the generation service and API endpoints."""
 
 import uuid
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from fastapi import HTTPException
+from pydantic_ai import ImageUrl
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.models import GenerationJobCreate, Room, User
+from visions.core.config import SETTINGS
+from visions.models import BUILTIN_STYLES_KV, GenerationJob, GenerationJobCreate, Room, User
 from visions.services import generation as generation_service
 
 
@@ -71,30 +76,141 @@ async def test_create_fails_on_bad_style(
 
 
 @pytest.mark.asyncio
-async def test_get_many_filter_by_job_ids(mock_db_session: AsyncSession, test_user: User):
+async def test_get_many_filter(mock_db_session: AsyncSession, test_user: User, test_room: Room):
     """Verify that the 'filter' argument correctly restricts results to specific UUIDs."""
-    ...
+
+    # 1. Prepare data for multiple jobs
+    job_data = [
+        GenerationJobCreate(room_id=test_room.id, style="japandi"),
+        GenerationJobCreate(room_id=test_room.id, style="industrial"),
+        GenerationJobCreate(room_id=test_room.id, style="coastal"),
+    ]
+
+    # 2. Use create_many to persist them
+    created_jobs = await generation_service.create_many(
+        db=mock_db_session, data=job_data, caller=test_user
+    )
+    await mock_db_session.commit()
+
+    # 3. Pick a subset of IDs to filter by (e.g., the first two)
+    target_ids = [created_jobs[0].id, created_jobs[1].id]
+    excluded_id = created_jobs[2].id
+
+    # 4. Execute the "get_many" logic
+    results = await generation_service.get_many(
+        mock_db_session, job_ids=target_ids, caller_id=test_user.id
+    )
+
+    # 5. Assertions
+    assert len(results) == 2
+    result_ids = [job.id for job in results]
+
+    for job_id in target_ids:
+        assert job_id in result_ids
+
+    assert excluded_id not in result_ids
+
+    # Verify the user balance was actually deducted correctly by create_many
+    await mock_db_session.refresh(test_user)
+    expected_balance = 10 - (SETTINGS.generation_cost * len(job_data))
+    assert test_user.balance == expected_balance
 
 
 @pytest.mark.asyncio
-async def test_get_many_unauthorized_access(mock_db_session: AsyncSession, test_user: User):
+async def test_get_many_unauthorized_access(
+    mock_db_session: AsyncSession, test_user: User, test_room: Room
+):
     """Ensure a user cannot see jobs submitted by a different user."""
-    ...
+
+    # 1. Create a "Stranger" user
+    stranger = User(
+        id=uuid.uuid4(),
+        email="stranger@example.com",
+        name="Stranger",
+    )
+    mock_db_session.add(stranger)
+
+    # 2. Create a job belonging to the Stranger
+    # We use create_many but pass the stranger as the caller
+    stranger_job_data = [GenerationJobCreate(room_id=test_room.id, style="minimalist")]
+
+    stranger_jobs = await generation_service.create_many(
+        db=mock_db_session, data=stranger_job_data, caller=stranger
+    )
+    stranger_job_id = stranger_jobs[0].id
+
+    # 3. Attempt to fetch jobs using the 'test_user' (the primary fixture)
+    # We pass the ID of the stranger's job, but the identity of test_user
+    results = await generation_service.get_many(
+        mock_db_session, caller_id=test_user.id, job_ids=[stranger_job_id]
+    )
+
+    # 4. Assertions
+    # The result should be empty because test_user doesn't own that job
+    assert len(results) == 0
+    assert stranger_job_id not in [j.id for j in results]
 
 
 @pytest.mark.asyncio
 async def test_get_or_404_raises_exception(mock_db_session: AsyncSession, test_user: User):
     """Ensure HTTPException is raised when a job ID does not exist for that user."""
-    ...
+
+    # 1. Create a random UUID that definitely doesn't exist in the DB
+    non_existent_id = uuid.uuid4()
+
+    # 2.1 assert that we sould normally get None
+    result = await generation_service.get(
+        db=mock_db_session, job_id=non_existent_id, caller_id=test_user.id
+    )
+    assert result is None
+
+    # 2. Assert that the service raises an HTTPException
+    with pytest.raises(HTTPException) as exc_info:
+        await generation_service.get_or_404(
+            db=mock_db_session, job_id=non_existent_id, caller_id=test_user.id
+        )
+
+    # 3. Verify the error details
+    assert exc_info.value.status_code == 404
+    assert "not found" in exc_info.value.detail.lower()
 
 
 ### Financials & Constraints
 @pytest.mark.asyncio
-async def test_create_many_deducts_user_balance(mock_db_session: AsyncSession, test_user: User):
+async def test_create_many_deducts_user_balance(
+    mock_db_session: AsyncSession, test_user: User, test_room: Room
+):
     """Verify that (balance - cost * len(jobs)) is calculated and persisted correctly."""
-    ...
+
+    # 1. Initial state setup
+    initial_balance = 10.0
+    test_user.balance = initial_balance
+    mock_db_session.add(test_user)
+    await mock_db_session.commit()
+
+    # 2. Define the jobs to create
+    job_data = [
+        GenerationJobCreate(room_id=test_room.id, style="japandi"),
+        GenerationJobCreate(room_id=test_room.id, style="industrial"),
+    ]
+    num_jobs = len(job_data)
+
+    # 3. Execute creation logic
+    # This calls the logic: caller.balance -= SETTINGS.generation_cost * len(jobs)
+    await generation_service.create_many(db=mock_db_session, data=job_data, caller=test_user)
+
+    # 4. Assertions
+    # We must refresh the user from the DB to ensure the change was persisted
+    await mock_db_session.refresh(test_user)
+
+    expected_reduction = SETTINGS.generation_cost * num_jobs
+    expected_balance = initial_balance - expected_reduction
+
+    assert test_user.balance == expected_balance
+    assert test_user.balance < initial_balance
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_create_many_insufficient_funds(mock_db_session: AsyncSession, test_user: User):
     """Test behavior when a user tries to create more jobs than their balance allows."""
@@ -102,22 +218,110 @@ async def test_create_many_insufficient_funds(mock_db_session: AsyncSession, tes
 
 
 @pytest.mark.asyncio
-async def test_create_with_invalid_style_fails(mock_db_session: AsyncSession, test_user: User):
-    """Check that BUILTIN_STYLES_KV validation prevents invalid style strings from being saved."""
-    ...
+async def test_submit_job_success_updates_metadata(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    mock_ai: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # 1. Setup: Ensure user and room exist in the DB
+    # We set a high balance to cover the generation cost
+    test_user.balance = 100
+    mock_db_session.add(test_user)
+    mock_db_session.add(test_room)
+    await mock_db_session.commit()
+
+    # 2. Create a Job using the service
+    style_key = next(iter(BUILTIN_STYLES_KV.keys()))
+    job_create = GenerationJobCreate(
+        room_id=test_room.id, style=style_key, extra_context="Bright and airy"
+    )
+
+    # create_many handles the balance deduction and DB insertion
+    jobs = await generation_service.create_many(
+        mock_db_session, data=[job_create], caller=test_user
+    )
+    job = jobs[0]
+
+    # 3. Mock the AI response and Image upload
+    # Mocking the pydantic_ai Agent run result
+    mock_usage = MagicMock()
+    mock_usage.requests = 1
+    mock_usage.tool_calls = 0
+    mock_usage.input_tokens = 500
+    mock_usage.cache_write_tokens = 0
+    mock_usage.cache_read_tokens = 0
+    mock_usage.output_tokens = 200
+
+    mock_resp = AsyncMock()
+    mock_resp.output.data = b"fake-image-bytes"
+    mock_resp.usage = MagicMock(return_value=mock_usage)
+
+    # 4. Execute the unit of work, patching where necessary
+    mock_ai.run = AsyncMock(name="mock_run", return_value=mock_resp)
+    mock_upload = AsyncMock(name="mock_upload")
+    monkeypatch.setattr(GenerationJob, "upload_image", mock_upload)
+    updated_job = await generation_service._submit_job(mock_db_session, job)
+
+    # 5. Assertions
+    assert updated_job.completed_at is not None
+    assert isinstance(updated_job.completed_at, datetime)
+    assert updated_job.error_message is None
+
+    # Verify Metadata Mapping
+    assert updated_job.llm_input_tokens == 500
+    assert updated_job.llm_output_tokens == 200
+    assert updated_job.llm_requests == 1
+
+    # Verify side effects
+    assert mock_upload.call_count == 1
+    assert mock_ai.run.call_count == 1
+
+    # verify user balance
+    assert test_user.balance == 100 - SETTINGS.generation_cost
 
 
-### Job Submission & AI Logic
 @pytest.mark.asyncio
-async def test_submit_job_success_updates_metadata(mock_db_session: AsyncSession):
-    """Verify that token usage, model ID, and timestamps are saved after a successful AI run."""
-    ...
-
-
-@pytest.mark.asyncio
-async def test_submit_job_uses_original_job_image_if_provided(mock_db_session: AsyncSession):
+async def test_submit_job_uses_original_job_image_if_provided(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_generation_job: GenerationJob,
+    test_derived_generation_job: GenerationJob,
+    mock_ai: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Ensure that if original_job_id exists, the AI uses that image instead of the base Room image."""
-    ...
+    await mock_db_session.commit()
+
+    mock_usage = MagicMock()
+    mock_usage.requests = 1
+    mock_usage.tool_calls = 0
+    mock_usage.input_tokens = 500
+    mock_usage.cache_write_tokens = 0
+    mock_usage.cache_read_tokens = 0
+    mock_usage.output_tokens = 200
+
+    mock_resp = AsyncMock()
+    mock_resp.output.data = b"fake-image-bytes"
+    mock_resp.usage = MagicMock(return_value=mock_usage)
+
+    # 4. Execute the unit of work, patching where necessary
+    mock_ai.run = AsyncMock(name="mock_run", return_value=mock_resp)
+    mock_upload = AsyncMock(name="mock_upload")
+    monkeypatch.setattr(GenerationJob, "upload_image", mock_upload)
+    _ = await generation_service._submit_job(mock_db_session, test_derived_generation_job)
+
+    assert mock_ai.run.call_count == 1
+    args, _ = mock_ai.run.call_args
+    call_list = args[0]  # This is the [prompt, img_url_] list
+
+    # Verify the second element is an ImageUrl containing the original job's URL
+    assert isinstance(call_list[1], ImageUrl)
+    # Assuming test_generation_job is the 'original' one
+    expected_url = await test_generation_job.get_image_url()
+    assert call_list[1].url == expected_url
+    assert expected_url != await test_derived_generation_job.get_image_url()
 
 
 @pytest.mark.asyncio

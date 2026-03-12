@@ -29,7 +29,7 @@ async def get_many(
     *,
     caller_id: uuid.UUID | None,
     property_id: uuid.UUID | None = None,
-    filter: list[uuid.UUID] | None = None,
+    job_ids: list[uuid.UUID] | None = None,
 ) -> Sequence[GenerationJob]:
     """List generation jobs for a property or all jobs for a user."""
     logger.debug("Listing generation jobs | property_id={} caller_id={}", property_id, caller_id)
@@ -40,8 +40,8 @@ async def get_many(
     if property_id:
         q = q.join(Room).where(Room.property_id == property_id)
 
-    if filter:
-        q = q.where(GenerationJob.id.in_(filter))  # pyright: ignore[reportAttributeAccessIssue] # pyrefly: ignore[reportAttributeAccessIssue,missing-attribute]
+    if job_ids:
+        q = q.where(GenerationJob.id.in_(job_ids))  # pyright: ignore[reportAttributeAccessIssue] # pyrefly: ignore[reportAttributeAccessIssue,missing-attribute]
 
     result = await db.exec(q)
     return result.all()
@@ -96,7 +96,7 @@ async def create_many(
 async def submit_jobs(job_ids: list[uuid.UUID]):
     """Run a series of generation jobs in their own DB session. Safe to call from a background task."""
     async with async_session_factory() as db:
-        jobs = await get_many(db, caller_id=None, filter=job_ids)
+        jobs = await get_many(db, caller_id=None, job_ids=job_ids)
         missing_jobs = set(job_ids) - {j.id for j in jobs}
         if missing_jobs:
             logger.warning("Job not found | job_ids={}", missing_jobs)

@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -43,11 +44,18 @@ from visions.services import generation as generation_service  # noqa  E402
 from visions.services import storage as storage_service  # noqa  E402
 from visions.services import ai as ai_service  # noqa  E402
 
+RESOURCES_DIR = Path(__file__).parent / "resources"
+
 
 @pytest.fixture(autouse=True)
-def mock_supabase(monkeypatch):
+def mock_supabase(monkeypatch: pytest.MonkeyPatch):
     mock_bucket = MagicMock()
-    mock_bucket.create_signed_url = AsyncMock(return_value={"signedURL": "http://example.com"})
+
+    def _create_signed_url(*args, **kwargs):
+        # create a consistant signed URL based on the args
+        return {"signedURL": f"https://example.com/{args}/{kwargs}"}
+
+    mock_bucket.create_signed_url = AsyncMock(side_effect=_create_signed_url)
     mock_client = MagicMock()
     mock_client.storage.from_.return_value = mock_bucket
     monkeypatch.setattr(storage_service, "_supabase_client", mock_client)
@@ -55,8 +63,9 @@ def mock_supabase(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def mock_ai(monkeypatch):
-    mock_agent = AsyncMock()
+def mock_ai(monkeypatch: pytest.MonkeyPatch):
+    mock_agent = MagicMock(name="mock_agent")
+    mock_agent.run = AsyncMock()
     monkeypatch.setattr(ai_service, "agent", mock_agent)
     return mock_agent
 
@@ -135,11 +144,11 @@ async def test_generation_job(
 ) -> GenerationJob:
     jobs = await generation_service.create_many(
         mock_db_session,
-        caller_id=test_user,
+        caller=test_user,
         data=[
             GenerationJobCreate(
                 room_id=test_room.id,
-                style="japandi",
+                style="Japandi",
                 original_job_id=None,
             )
         ],
@@ -153,11 +162,11 @@ async def test_derived_generation_job(
 ) -> GenerationJob:
     jobs = await generation_service.create_many(
         mock_db_session,
-        caller_id=test_user,
+        caller=test_user,
         data=[
             GenerationJobCreate(
                 room_id=test_generation_job.room_id,
-                style="industrial",
+                style="Industrial",
                 original_job_id=test_generation_job.id,
             )
         ],
