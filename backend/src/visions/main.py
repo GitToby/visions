@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from visions.api import auth, generation, property, styles
 from visions.core.config import SETTINGS
+from visions.core.exception import VisionsApiException
 
 app = FastAPI(title=SETTINGS.app_name, version=SETTINGS.version, debug=SETTINGS.debug)
 
@@ -56,3 +57,8 @@ class HealthCheckResponse(BaseModel):
 @app.get("/health", tags=["meta"])
 async def health() -> HealthCheckResponse:
     return HealthCheckResponse()
+
+
+@app.exception_handler(VisionsApiException)
+async def visions_api_exception_handler(request: Request, exc: VisionsApiException):
+    raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc

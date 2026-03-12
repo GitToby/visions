@@ -1,3 +1,4 @@
+--- generation_service.py
 """Orchestrates batch generation jobs: room x style → Gemini → Supabase Storage."""
 
 import asyncio
@@ -165,7 +166,7 @@ async def _submit_job(db: AsyncSession, job: GenerationJob):
         job.llm_output_tokens = usage.output_tokens
 
     except Exception as exc:
-        logger.warning("Job failed | job_id={} error={}", job_id, str(exc))
+        logger.exception("Job failed | job_id={} error={}", job_id, exc)
         submitter = job.submitter
         submitter.balance += 1
         job.error_message = str(exc)
@@ -190,7 +191,52 @@ async def main_genjob_rec():
     logger.info("Generation job rec complete | job_ids={}", job_ids)
 
 
-if __name__ == "__main__":
-    import asyncio
+--- conftext.py
+@pytest.fixture
+async def mock_db_session():
+    # All sessions will have a fresh in-memory database
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",  # :memory: connection
+        echo=SETTINGS.debug,
+        #
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
 
-    asyncio.run(main_genjob_rec())
+    # 1. Initialize schema
+    async with engine.begin() as conn:
+        await conn.run_sync(get_metadata().create_all)
+
+    # 2. Setup session factory
+    async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    # 3. Use the session and ensure cleanup
+    async with async_session_factory() as session:
+        yield session
+
+    # 4. Explicitly dispose of the engine after the session is closed
+    await engine.dispose()
+
+
+@pytest.fixture
+def user_id() -> uuid.UUID:
+    return uuid.uuid4()
+
+
+@pytest.fixture
+def test_user(user_id: uuid.UUID) -> User:
+    return User(
+        id=user_id,
+        email="test@example.com",
+        name="Test User",
+        picture=None,
+    )
+
+
+--- 
+
+Using the above code, implement the following stub. When creating ORM Objects  If more fixtured are needed, create them alongside the test.
+
+@pytest.mark.asyncio
+async def test_create_fails_on_bad_style(mock_db_session: AsyncSession, test_user: User): ...
+

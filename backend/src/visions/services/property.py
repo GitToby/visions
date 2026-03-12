@@ -59,7 +59,6 @@ async def create(db: AsyncSession, *, owner_id: uuid.UUID, data: PropertyCreate)
     )
     db.add(property)
     await db.commit()
-    await db.refresh(property)
     await db.refresh(property, attribute_names=["rooms"])
     logger.info("Property created | property_id={} name={!r}", property.id, property.name)
     return property

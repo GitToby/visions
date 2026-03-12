@@ -1,61 +1,177 @@
+import os
+import random
 import uuid
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest_asyncio
+import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlmodel import StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from visions.core.db import get_session
-from visions.core.security import get_current_user
-from visions.main import app
-from visions.models import User
+# for general randomness seeds (uuid4)
+random.seed(1)
 
-TEST_DB_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/visions_test"
+# Set required env vars before any visions module imports trigger Settings()
+os.environ.setdefault("DATABASE_PASSWORD", "test")
+os.environ.setdefault("SUPABASE_SECRET_KEY", "test")
+os.environ.setdefault("S3_SECRET_ACCESS_KEY", "test")
+os.environ.setdefault("GEMINI_API_KEY", "test")
 
-TEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+# visions.* must be imported after env vars are set
+
+from visions.core.config import SETTINGS  # noqa  E402
+from visions.core.db import get_session  # noqa  E402
+from visions.core.security import get_current_user  # noqa  E402
+from visions.main import app  # noqa  E402
+from visions.models import (  # noqa  E402
+    GenerationJob,
+    GenerationJobCreate,
+    Property,
+    PropertyCreate,
+    Room,
+    RoomCreate,
+    User,
+    get_metadata,
+)
+from visions.services import property as property_service  # noqa  E402
+from visions.services import room as room_service  # noqa  E402
+from visions.services import generation as generation_service  # noqa  E402
+from visions.services import storage as storage_service  # noqa  E402
+from visions.services import ai as ai_service  # noqa  E402
 
 
-@pytest_asyncio.fixture(scope="session")
-async def engine():
-    _engine = create_async_engine(TEST_DB_URL, echo=False)
-    async with _engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    yield _engine
-    async with _engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-    await _engine.dispose()
+@pytest.fixture(autouse=True)
+def mock_supabase(monkeypatch):
+    mock_bucket = MagicMock()
+    mock_bucket.create_signed_url = AsyncMock(return_value={"signedURL": "http://example.com"})
+    mock_client = MagicMock()
+    mock_client.storage.from_.return_value = mock_bucket
+    monkeypatch.setattr(storage_service, "_supabase_client", mock_client)
+    return mock_client
 
 
-@pytest_asyncio.fixture()
-async def db(engine):
-    session_factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with session_factory() as session:
+@pytest.fixture(autouse=True)
+def mock_ai(monkeypatch):
+    mock_agent = AsyncMock()
+    monkeypatch.setattr(ai_service, "agent", mock_agent)
+    return mock_agent
+
+
+@pytest.fixture
+async def mock_db_session():
+    # All sessions will have a fresh in-memory database
+    engine = create_async_engine(
+        "sqlite+aiosqlite://",  # :memory: connection
+        echo=SETTINGS.debug,
+        #
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    # 1. Initialize schema
+    async with engine.begin() as conn:
+        await conn.run_sync(get_metadata().create_all)
+
+    # 2. Setup session factory
+    async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    # 3. Use the session and ensure cleanup
+    async with async_session_factory() as session:
         yield session
-        await session.rollback()
+
+    # 4. Explicitly dispose of the engine after the session is closed
+    await engine.dispose()
 
 
-@pytest_asyncio.fixture()
-def test_user() -> User:
-    return User(
-        id=TEST_USER_ID,
+@pytest.fixture
+async def test_user(mock_db_session: AsyncSession) -> User:
+    user = User(
+        id=uuid.uuid4(),
         email="test@example.com",
         name="Test User",
+        picture=None,
+    )
+    mock_db_session.add(user)
+    await mock_db_session.commit()
+    await mock_db_session.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_property(mock_db_session: AsyncSession, test_user: User) -> Property:
+    return await property_service.create(
+        mock_db_session,
+        owner_id=test_user.id,
+        data=PropertyCreate(
+            name="test property",
+            description=None,
+            address=None,
+        ),
     )
 
 
-@pytest_asyncio.fixture()
-async def client(db: AsyncSession, test_user: User) -> AsyncClient:
-    """HTTP test client with DB override and auth stub."""
+@pytest.fixture
+async def test_room(
+    mock_db_session: AsyncSession, test_user: User, test_property: Property
+) -> Room:
+    return await room_service.create(
+        mock_db_session,
+        caller_id=test_user.id,
+        data=RoomCreate(
+            label="Test Room",
+            property_id=test_property.id,
+        ),
+    )
 
-    async def override_session():
-        yield db
 
-    async def override_current_user():
-        return test_user
+@pytest.fixture
+async def test_generation_job(
+    mock_db_session: AsyncSession, test_user: User, test_room: Room
+) -> GenerationJob:
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        caller_id=test_user,
+        data=[
+            GenerationJobCreate(
+                room_id=test_room.id,
+                style="japandi",
+                original_job_id=None,
+            )
+        ],
+    )
+    return jobs[0]
 
-    app.dependency_overrides[get_session] = override_session
-    app.dependency_overrides[get_current_user] = override_current_user
+
+@pytest.fixture
+async def test_derived_generation_job(
+    mock_db_session: AsyncSession, test_user: User, test_generation_job: GenerationJob
+) -> GenerationJob:
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        caller_id=test_user,
+        data=[
+            GenerationJobCreate(
+                room_id=test_generation_job.room_id,
+                style="industrial",
+                original_job_id=test_generation_job.id,
+            )
+        ],
+    )
+    return jobs[0]
+
+
+@pytest.fixture
+async def client(test_user: User, mock_db: AsyncMock):
+    async def _override_get_session():
+        yield mock_db
+
+    app.dependency_overrides[get_session] = _override_get_session
+    app.dependency_overrides[get_current_user] = lambda: test_user
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac

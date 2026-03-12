@@ -9,6 +9,7 @@ from loguru import logger
 from supabase import StorageException, create_async_client
 
 from visions.core.config import SETTINGS
+from visions.core.exception import VisionsApiException
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
@@ -71,7 +72,7 @@ async def s3_presigned_url(*, bucket: str, key: str) -> str | None:
             logger.debug("Presigned URL: object not found | key={}", key)
             return None
         logger.error("Presigned URL generation failed | key={} error={}", key, exc)
-        raise HTTPException(
+        raise VisionsApiException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Could not generate image URL",
         ) from exc

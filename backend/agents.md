@@ -14,19 +14,23 @@ You are an expert backend engineer on the Visions codebase. Implement API endpoi
 
 ## Commands
 
+These can be run from the project root by prefixing the job with `backend::` for example, `just backend::init`.
+
 ```bash
-just backend:init               # uv sync --all-groups
-just backend:serve              # uvicorn — http://localhost:8000
-just backend:lint               # ruff format + ruff check --fix
-just backend:check              # lint + pyrefly check  ← run before every PR
-just backend:test [flags]       # pytest -v; pass flags directly to pytest
-just backend:migrate            # alembic upgrade head
-just backend:mk-migration 'describe change'   # alembic revision --autogenerate
+just init               # uv sync --all-groups
+just serve              # uvicorn — http://localhost:8000
+just lint               # ruff format + ruff check --fix
+just check              # lint + pyrefly check  ← run before every PR
+just test [flags]       # pytest -v; pass flags directly to pytest
+just migrate            # alembic upgrade head
+just mk-migration 'describe change'   # alembic revision --autogenerate
 ```
 
 **Tooling constraints:**
+
 - `uv` only — never `pip`, `pip-tools`, or raw `python -m venv`
 - `pyrefly` only — never `mypy`
+- `pytest` only - never `unittest`
 
 ## Project Structure
 
@@ -52,6 +56,7 @@ backend/
 ```
 
 **Structural rules:**
+
 - Route handlers are thin — validate input, call a service, return a response
 - All business logic lives in `services/`
 - `models.py` — SQLModel definitions only; no query or business logic
@@ -221,8 +226,14 @@ import uuid
 from datetime import datetime
 
 
-class RoomCreateRequest(BaseModel):
+class RoomBase(BaseModel):
     name: str
+
+class RoomCreate(RoomBase):
+    pass
+
+class RoomUpdate(RoomBase):
+    pass
 
 
 class RoomResponse(BaseModel):
@@ -247,101 +258,9 @@ async def get_room(room_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return db.get(Room, room_id)  # no auth, no 404, raw ORM object
 ```
 
----
+### 5. Services
 
-### 5. S3 / Supabase Storage
-
-Presigned URL generation lives in `services/storage.py`. Models that expose image URLs call `to_response()` which is **async**:
-
-```python
-# src/visions/services/storage.py
-import aiobotocore.session
-from visions.core.config import settings
-
-
-async def get_presigned_url(key: str, expires_in: int = 3600) -> str:
-    session = aiobotocore.session.get_session()
-    async with session.create_client(
-        "s3",
-        region_name=settings.s3_region,
-        endpoint_url=settings.s3_endpoint_url,
-        aws_access_key_id=settings.s3_access_key_id,
-        aws_secret_access_key=settings.s3_secret_access_key,
-    ) as s3:
-        url = await s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": settings.s3_bucket, "Key": key},
-            ExpiresIn=expires_in,
-        )
-    return url
-```
-
-✅ **Do this** — errors propagate, presigned URL only when key exists:
-
-```python
-from visions.services import storage
-
-async def get_with_url(db: AsyncSession, *, room_id: uuid.UUID) -> RoomResponse:
-    room = await get(db, room_id=room_id, owner_id=...)
-    image_url = None
-    if room.image_url:
-        image_url = await storage.get_presigned_url(f"rooms/{room.id}.webp")
-    return RoomResponse(**room.model_dump(), image_url=image_url)
-```
-
-❌ **Not this** — silently swallows S3 errors, returns a broken URL on failure:
-
-```python
-# ❌ bare except hides real errors; returning None silently breaks the UI
-async def get_with_url(db, room_id):
-    room = await get(db, room_id=room_id, owner_id=None)
-    try:
-        url = await storage.get_presigned_url(f"rooms/{room.id}.webp")
-    except:
-        url = None  # caller has no idea something went wrong
-    return {"id": room.id, "image_url": url}
-```
-
-### 6. Generation Job Pattern
-
-```python
-# src/visions/services/generation_service.py
-from visions.models import GenerationJob
-from visions.services import gemini, storage
-
-
-async def trigger(
-    db: AsyncSession,
-    *,
-    room_id: uuid.UUID,
-    style: str,
-    extra_context: str | None = None,
-) -> GenerationJob:
-    job = GenerationJob(
-        room_id=room_id,
-        style=style,
-        extra_context=extra_context,
-    )
-    db.add(job)
-    await db.commit()
-    await db.refresh(job)
-
-    try:
-        result_bytes = await gemini.generate_image(
-            room_id=room_id, style=style, extra_context=extra_context
-        )
-        key = f"generation-jobs/{room_id}/{style}.webp"
-        await storage.upload(key, result_bytes, content_type="image/webp")
-        job.image_url = key
-        job.completed_at = datetime.utcnow()
-    except Exception as exc:
-        job.error_message = str(exc)
-
-    db.add(job)
-    await db.commit()
-    await db.refresh(job)
-    return job
-```
+Make use of services in your business logic, services live in `services/`.
 
 ---
 
@@ -363,25 +282,7 @@ mise run backend:migrate
 
 ## Testing
 
-Tests live in `backend/tests/`. Use `pytest-asyncio` with an `httpx.AsyncClient` fixture.
-
-```python
-# tests/conftest.py  (example fixture setup)
-import pytest
-from httpx import AsyncClient, ASGITransport
-from visions.main import app
-
-
-@pytest.fixture
-async def client() -> AsyncClient:
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        yield c
-
-
-@pytest.fixture
-def auth_headers(test_user_token: str) -> dict:
-    return {"Authorization": f"Bearer {test_user_token}"}
-```
+Tests live in `backend/tests/`. Use `pytest`
 
 **Every new endpoint needs three tests:** happy path, unauthenticated (401), invalid input (422).
 
@@ -429,34 +330,28 @@ async def test_create_room(db: AsyncSession):
     assert room.id is not None  # testing the service in isolation tells us nothing about the API contract
 ```
 
----
+## Static Assets
 
-## Style Slugs & Static Assets
-
-- Valid style slugs: `japandi`, `industrial`, `mid-century`, `coastal`, `maximalist`, `biophilic`
-- Style preview images served at: `{api_base_url}/static/styles/{slug}/{room}.webp`
-- Room source images in S3: `rooms/{room_id}.webp`
-- Generation results in S3: `generation-jobs/{room_id}/{style}.webp`
-
----
+- Static assets are served from the `static` directory at the API base URL.
 
 ## Boundaries
 
-|     | Rule                                                                                |
-| --- | ----------------------------------------------------------------------------------- |
-| ✅  | Run `mise run backend:check` before marking any task done                           |
-| ✅  | Keep route handlers thin — all business logic goes in `services/`                   |
-| ✅  | Validate all user input with Pydantic request schemas                               |
-| ✅  | Write tests for every new endpoint (happy path, 401, 422)                           |
-| ✅  | Always handle errors on Gemini API calls and S3 storage operations                  |
-| ⚠️  | **Ask first:** adding a new dependency (`uv add`)                                   |
-| ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations                 |
-| ⚠️  | **Ask first:** modifying auth logic, JWT config, or `core/deps.py`                  |
-| ⚠️  | **Ask first:** changing the Gemini prompt or generation parameters in `gemini.py`   |
-| ⚠️  | **Ask first:** any change to env variable names or `core/config.py`                 |
-| 🚫  | Never commit secrets, API keys, or credentials                                      |
-| 🚫  | Never modify applied Alembic migrations in `alembic/versions/`                      |
-| 🚫  | Never write business logic in FastAPI route handlers                                |
-| 🚫  | Never use `pip`, `pip-tools`, or `mypy`                                             |
-| 🚫  | Never skip error handling on Gemini or S3 calls                                     |
-| 🚫  | Never delete a failing test to make the suite pass — fix the root cause             |
+|     | Rule                                                                              |
+| --- | --------------------------------------------------------------------------------- |
+| ✅  | Keep changes focused and short.                                                   |
+| ✅  | Run `just backend:check` before marking any task done                             |
+| ✅  | Keep route handlers thin — all business logic goes in `services/`                 |
+| ✅  | Validate all user input with Pydantic request schemas                             |
+| ✅  | Write tests for every new endpoint (happy path, 401, 422)                         |
+| ✅  | Always handle errors on Gemini API calls and S3 storage operations                |
+| ⚠️  | **Ask first:** adding a new dependency (`uv add`)                                 |
+| ⚠️  | **Ask first:** changing the DB schema or writing Alembic migrations               |
+| ⚠️  | **Ask first:** modifying auth logic, JWT config, or `core/deps.py`                |
+| ⚠️  | **Ask first:** changing the Gemini prompt or generation parameters in `gemini.py` |
+| ⚠️  | **Ask first:** any change to env variable names or `core/config.py`               |
+| 🚫  | Never commit secrets, API keys, or credentials                                    |
+| 🚫  | Never modify applied Alembic migrations in `alembic/versions/`                    |
+| 🚫  | Never write business logic in FastAPI route handlers                              |
+| 🚫  | Never use `pip`, `pip-tools`, or `mypy`                                           |
+| 🚫  | Never skip error handling on Gemini or S3 calls                                   |
+| 🚫  | Never delete a failing test to make the suite pass — fix the root cause           |

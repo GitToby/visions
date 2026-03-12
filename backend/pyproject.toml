@@ -31,7 +31,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    # build
+  # build
   "setuptools-scm>=9.2.2",
   # migrations
   "alembic>=1.18.4",
@@ -45,6 +45,7 @@ dev = [
   "ruff>=0.15.4",
   # types
   "types-boto3[essential]>=1.42.60",
+  "aiosqlite>=0.22.1",
 ]
 
 [build-system]

@@ -25,7 +25,7 @@ async def start_generation_for_room(
             status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Insufficient balance"
         )
     job = await generation_service.create_many(db, data=payload, caller=current_user)
-    background_tasks.add_task(generation_service.submit_many, [j.id for j in job])
+    background_tasks.add_task(generation_service.submit_jobs, [j.id for j in job])
 
     return await asyncio.gather(*[j.to_response() for j in job])
 
@@ -39,7 +39,7 @@ async def list_jobs_for_property(
     """
     See all generation jobs for a property.
     """
-    jobs = await generation_service.list_all(db, property_id=property_id, caller_id=current_user.id)
+    jobs = await generation_service.get_many(db, property_id=property_id, caller_id=current_user.id)
     return await asyncio.gather(*[j.to_response() for j in jobs])
 
 
