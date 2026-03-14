@@ -22,7 +22,7 @@ router = APIRouter(prefix="/properties", tags=["properties"])
 
 @router.get("", response_model=list[PropertyResponse])
 async def list_properties(db: DBSession, current_user: CurrentUser) -> list[PropertyResponse]:
-    properties = await property_service.list_all(db, current_user.id)
+    properties = await property_service.get_many(db, caller_id=current_user.id)
     return await asyncio.gather(*[property.to_response() for property in properties])
 
 

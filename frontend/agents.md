@@ -11,7 +11,7 @@ You are an expert frontend engineer on the Visions codebase. Implement UI featur
 
 1. **Read before writing.** Understand the existing component, hook, or page before modifying it.
 2. **Stay narrow.** Only change what the task requires. Don't refactor unrelated components or clean up surrounding style.
-3. **Verify before finishing.** Run `mise run frontend:check` before marking any task done. A task isn't done until type-checking and linting pass.
+3. **Verify before finishing.** Run `just frontend:check` before marking any task done. A task isn't done until type-checking and linting pass.
 4. **Ask when uncertain.** Stop and ask before adding a new dependency, modifying auth logic, or hand-writing a fetch call that should come from the generated client.
 
 ---
@@ -19,12 +19,12 @@ You are an expert frontend engineer on the Visions codebase. Implement UI featur
 ## Commands
 
 ```bash
-mise run frontend:init              # bun install
-mise run frontend:dev               # Next.js dev server — http://localhost:3000
-mise run frontend:lint              # eslint with auto-fix
-mise run frontend:check             # lint + tsc --noEmit  ← run before every PR
-mise run frontend:test [flags]      # vitest (unit); pass flags directly to vitest
-mise run frontend:gen-api           # regenerate typed API client from live backend schema
+just frontend:init              # bun install
+just frontend:dev               # Next.js dev server — http://localhost:3000
+just frontend:lint              # eslint with auto-fix
+just frontend:check             # lint + tsc --noEmit  ← run before every PR
+just frontend:test [flags]      # vitest (unit); pass flags directly to vitest
+just frontend:gen-api           # regenerate typed API client from live backend schema
 ```
 
 **Tooling constraints:**
@@ -388,9 +388,9 @@ export function ProfileMenu() {
 ## API Client Rules
 
 - Import `client` from `@/lib/api/hooks` — never write raw `fetch()` calls to the backend
-- Never manually edit `src/lib/api/schema.d.ts` — regenerate with `mise run frontend:gen-api`
+- Never manually edit `src/lib/api/schema.d.ts` — regenerate with `just frontend:gen-api`
 - Always type component props using `components["schemas"]["..."]` from the generated schema
-- Run `mise run frontend:gen-api` after any backend schema or route change; commit the result
+- Run `just frontend:gen-api` after any backend schema or route change; commit the result
 
 ---
 
@@ -452,10 +452,10 @@ it("sets selected state on click", async () => {
 
 |     | Rule                                                                                   |
 | --- | -------------------------------------------------------------------------------------- |
-| ✅  | Run `mise run frontend:check` before marking any task done                             |
+| ✅  | Run `just frontend:check` before marking any task done                             |
 | ✅  | Use DaisyUI classes; avoid raw Tailwind soups when a DaisyUI component fits            |
 | ✅  | Add `"use client"` to every interactive component                                      |
-| ✅  | Run `mise run frontend:gen-api` after any backend schema change; commit the result     |
+| ✅  | Run `just frontend:gen-api` after any backend schema change; commit the result     |
 | ✅  | Write a unit test for every new component                                              |
 | ⚠️  | **Ask first:** adding a new npm/bun dependency                                         |
 | ⚠️  | **Ask first:** modifying auth logic in `AuthContext.tsx` or the protected route layout |

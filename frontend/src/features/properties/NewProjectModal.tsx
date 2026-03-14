@@ -33,7 +33,7 @@ export function NewProjectModal({ open, onClose }: NewProjectModalProps) {
     setLoading(true);
     setError(null);
     const { data, error: apiError } = await apiClient.POST("/properties", {
-      body: { name },
+      body: { name, public: false },
     });
     setLoading(false);
     if (apiError || !data) {

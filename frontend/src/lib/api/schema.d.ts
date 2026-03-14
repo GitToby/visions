@@ -302,10 +302,10 @@ export interface components {
             /** Name */
             name: string;
             /**
-             * Publicly Accessible
+             * Public
              * @default false
              */
-            publicly_accessible: boolean;
+            public: boolean;
         };
         /** PropertyResponse */
         PropertyResponse: {
@@ -343,8 +343,8 @@ export interface components {
             address?: string | null;
             /** Name */
             name?: string | null;
-            /** Publicly Accessible */
-            publicly_accessible?: boolean | null;
+            /** Public */
+            public?: boolean | null;
         };
         /**
          * RoomResponse

@@ -145,6 +145,7 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
 
     properties: list[Property] = Relationship(back_populates="owner")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="submitter")
+    shared_properties: list[PropertyShare] = Relationship(back_populates="shared_with")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -179,12 +180,12 @@ class PropertyBase(SQLModel):
 
 class PropertyUpdate(PropertyBase):
     name: str | None = Field(default=None, max_length=255)
-    publicly_accessible: bool | None = None
+    public: bool | None = None
 
 
 class PropertyCreate(PropertyBase):
     name: str = Field(max_length=255)
-    publicly_accessible: bool = False
+    public: bool = False
 
 
 class Property(PropertyCreate, UUIDModel, CreatedUpdatedAtMixin, table=True):
@@ -192,6 +193,7 @@ class Property(PropertyCreate, UUIDModel, CreatedUpdatedAtMixin, table=True):
 
     owner: User = Relationship(back_populates="properties")
     rooms: list[Room] = Relationship(back_populates="property")
+    shares: list[PropertyShare] = Relationship(back_populates="property")
 
     async def to_response(self) -> PropertyResponse:
         return PropertyResponse(
@@ -217,6 +219,41 @@ class PropertyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None
     rooms: list[RoomResponse]
+
+
+# ─── PropertyShare ────────────────────────────────────────────────────────────
+# Allow users to share properties with others
+
+
+class PropertyShareBase(BaseModel):
+    """Schema used to share a property with another user"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    property_id: uuid.UUID
+    shared_with_id: uuid.UUID
+
+
+class PropertyShareCreate(PropertyShareBase):
+    """Data needed to create a property share"""
+
+    pass
+
+
+class PropertyShareUpdate(PropertyShareBase):
+    """Data needed to update a property share"""
+
+    pass
+
+
+class PropertyShare(PropertyShareBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+    __table_args__ = (UniqueConstraint("property_id", "shared_with_id"),)
+
+    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
+    shared_with_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+
+    property: Property = Relationship(back_populates="shares")
+    shared_with: User = Relationship(back_populates="shared_properties")
 
 
 # ─── Room ─────────────────────────────────────────────────────────────────────
