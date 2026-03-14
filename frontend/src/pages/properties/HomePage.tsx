@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { NewProjectModal } from "@/features/properties/NewProjectModal";
 import { PropertyGrid } from "@/features/properties/PropertyGrid";
-import config from "@/lib/config";
 
 export function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -12,9 +11,7 @@ export function HomePage() {
       <Navbar />
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-10">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">
-            My Projects | {config.api.is_preview}
-          </h1>
+          <h1 className="text-2xl font-bold">My Projects</h1>
           <button
             type="button"
             className="btn btn-primary"

@@ -27,9 +27,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const callbackLink = `${window.location.origin}/auth/callback`;
+    console.log(`Sending ${email} link to '${callbackLink}' `);
     await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: callbackLink },
     });
     setSent(true);
     setLoading(false);
