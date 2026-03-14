@@ -10,6 +10,6 @@ age = "latest"
 claude = "latest"
 
 [env]
-VITE_API_BASE_URL = "http://localhost:8000"
+USE_PROD_API = false # set to true to use the production API endpoint. 
 VITE_SUPABASE_URL = "https://sutnrwodqzpfvuuboksu.supabase.co"
 VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY = "sb_publishable_l6XbltlqEPGu-hm18EGx-Q_qjLMqPS4"
