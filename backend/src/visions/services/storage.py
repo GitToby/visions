@@ -77,7 +77,6 @@ async def s3_presigned_url(*, bucket: str, key: str) -> str | None:
 def upload_file(file: UploadFile, *, bucket: str, key: str):
     """Uploads a file to S3."""
     size_kb = (file.size or 0) / 1024
-    # todo, check if image by known codecs - then alter the image to be of a standard size
     logger.debug(f"Uploading generated image | {bucket}/{key} {size_kb=:.1f}KB")
     try:
         _s3.upload_fileobj(

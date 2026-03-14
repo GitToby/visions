@@ -63,6 +63,13 @@ def mock_supabase(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture(autouse=True)
+def mock_s3(monkeypatch: pytest.MonkeyPatch):
+    mock = MagicMock(name="mock_s3")
+    monkeypatch.setattr(storage_service, "_s3", mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
 def mock_ai(monkeypatch: pytest.MonkeyPatch):
     mock_agent = MagicMock(name="mock_agent")
     mock_agent.run = AsyncMock()
