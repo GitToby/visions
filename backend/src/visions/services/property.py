@@ -10,6 +10,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from visions.models import Property, PropertyCreate, PropertyUpdate, Room
 
 
+async def get_featured(db: AsyncSession) -> Sequence[Property]:
+    # todo this can be smarter.
+    return await get_many(db, limit=10)
+
+
 async def get_many(
     db: AsyncSession,
     *,
