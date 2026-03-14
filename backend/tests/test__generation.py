@@ -1,5 +1,6 @@
 """Tests for the generation service and API endpoints."""
 
+import asyncio
 import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
@@ -493,3 +494,66 @@ async def test_concurrent_job_submissions(mock_db_session: AsyncSession):
 async def test_upload_image_to_storage_integration(mock_db_session: AsyncSession):
     """Verify the interaction between the AI response data and the job's upload_image method."""
     ...
+
+
+### ROOM_GENERATION_NOTIFICATIONS
+@pytest.mark.asyncio
+async def test_submit_jobs_notifies_subscribed_queue(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """submit_jobs puts the processed job into any queue registered for its room_id."""
+    style_key = next(iter(BUILTIN_STYLES_KV.keys()))
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        data=[GenerationJobCreate(room_id=test_room.id, style=style_key)],
+        caller=test_user,
+    )
+    job = jobs[0]
+
+    monkeypatch.setattr(generation_service, "get_many", AsyncMock(return_value=[job]))
+    monkeypatch.setattr(generation_service, "_submit_job", AsyncMock(return_value=job))
+
+    q: asyncio.Queue[GenerationJob] = asyncio.Queue()
+    generation_service.ROOM_GENERATION_NOTIFICATIONS[test_room.id] = q
+    try:
+        await generation_service.submit_jobs([job.id])
+    finally:
+        generation_service.ROOM_GENERATION_NOTIFICATIONS.pop(test_room.id, None)
+
+    assert not q.empty()
+    notified_job = q.get_nowait()
+    assert notified_job.id == job.id
+    assert notified_job.room_id == test_room.id
+
+
+@pytest.mark.asyncio
+async def test_submit_jobs_does_not_notify_unrelated_room(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A queue registered for a different room_id should not receive notifications."""
+    style_key = next(iter(BUILTIN_STYLES_KV.keys()))
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        data=[GenerationJobCreate(room_id=test_room.id, style=style_key)],
+        caller=test_user,
+    )
+    job = jobs[0]
+
+    monkeypatch.setattr(generation_service, "get_many", AsyncMock(return_value=[job]))
+    monkeypatch.setattr(generation_service, "_submit_job", AsyncMock(return_value=job))
+
+    other_room_id = uuid.uuid4()
+    q: asyncio.Queue[GenerationJob] = asyncio.Queue()
+    generation_service.ROOM_GENERATION_NOTIFICATIONS[other_room_id] = q
+    try:
+        await generation_service.submit_jobs([job.id])
+    finally:
+        generation_service.ROOM_GENERATION_NOTIFICATIONS.pop(other_room_id, None)
+
+    assert q.empty()

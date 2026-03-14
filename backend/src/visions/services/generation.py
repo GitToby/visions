@@ -26,6 +26,13 @@ from visions.models import (
 from visions.services import ai
 from visions.services import room as room_service
 
+ROOM_GENERATION_NOTIFICATIONS: dict[uuid.UUID, asyncio.Queue[GenerationJob]] = {}
+"""
+A mutable map of notifications for a given room.
+ - Subscribers make their own queue and place it in the map.
+ - Notifications are pushed when something happens to that room.
+"""
+
 
 async def get_many(
     db: AsyncSession,
@@ -128,6 +135,12 @@ async def submit_jobs(job_ids: list[uuid.UUID], dry_run: bool = False):
 
         jobs = await asyncio.gather(*[_submit_job(db, job, dry_run) for job in jobs])
         await db.commit()
+
+        # notify that we've done something with the jobs
+        for job in jobs:
+            if q := ROOM_GENERATION_NOTIFICATIONS.get(job.room_id):
+                await q.put(job)
+
         return jobs
 
 
