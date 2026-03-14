@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import createClient, { type Middleware } from "openapi-fetch";
 import { queryKeys } from "@/lib/api/queryKeys";
 import type { components, paths } from "@/lib/api/schema";
@@ -29,6 +29,17 @@ export function useMe(enabled = true) {
     },
     enabled,
     retry: false,
+  });
+}
+
+export function useFeaturedProperties() {
+  return useQuery({
+    queryKey: queryKeys.featuredProperties,
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/properties/featured");
+      if (error) throw error;
+      return data;
+    },
   });
 }
 
@@ -64,6 +75,23 @@ export function useProperty(
     refetchInterval: opts?.refetchInterval
       ? (query) => opts.refetchInterval!(query.state.data)
       : undefined,
+  });
+}
+
+export function useUpdateProperty(propertyId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: components["schemas"]["PropertyUpdate"]) => {
+      const { data, error } = await apiClient.PUT("/properties/{property_id}", {
+        params: { path: { property_id: propertyId } },
+        body,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.property(propertyId), data);
+    },
   });
 }
 

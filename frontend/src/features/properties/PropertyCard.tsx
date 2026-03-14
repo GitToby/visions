@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/features/auth/AuthContext";
 import type { components } from "@/lib/api/schema";
 
 type PropertyResponse = components["schemas"]["PropertyResponse"];
@@ -8,6 +9,8 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
+  const { user } = useAuth();
+  const isOwner = !!user && user.id === property.owner_id;
   const images = property.rooms
     .map((r) => r.image_url)
     .filter((url): url is string => !!url)
@@ -50,10 +53,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
 
         <div className="card-body card-sm py-3">
           <h2 className="card-title text-base">{property.name}</h2>
-          <span className="badge badge-neutral badge-sm">
-            {property.rooms.length}{" "}
-            {property.rooms.length === 1 ? "room" : "rooms"}
-          </span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="badge badge-neutral badge-sm">
+              {property.rooms.length}{" "}
+              {property.rooms.length === 1 ? "room" : "rooms"}
+            </span>
+            {isOwner && property.public && (
+              <span className="badge badge-primary badge-sm">Public</span>
+            )}
+          </div>
         </div>
       </div>
     </Link>

@@ -41,6 +41,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/properties/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Featured Properties */
+        get: operations["featured_properties_properties_featured_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/properties": {
         parameters: {
             query?: never;
@@ -295,12 +312,17 @@ export interface components {
         };
         /** PropertyCreate */
         PropertyCreate: {
-            /** Name */
-            name: string;
             /** Description */
             description?: string | null;
             /** Address */
             address?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Public
+             * @default false
+             */
+            public: boolean;
         };
         /** PropertyResponse */
         PropertyResponse: {
@@ -315,6 +337,8 @@ export interface components {
             description: string | null;
             /** Address */
             address: string | null;
+            /** Public */
+            public: boolean;
             /**
              * Owner Id
              * Format: uuid
@@ -332,12 +356,14 @@ export interface components {
         };
         /** PropertyUpdate */
         PropertyUpdate: {
-            /** Name */
-            name?: string | null;
             /** Description */
             description?: string | null;
             /** Address */
             address?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Public */
+            public?: boolean | null;
         };
         /**
          * RoomResponse
@@ -446,6 +472,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    featured_properties_properties_featured_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropertyResponse"][];
+                };
             };
         };
     };

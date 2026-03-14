@@ -1,23 +1,47 @@
 from loguru import logger
-from pydantic import SecretStr
+from pydantic import BaseModel, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 try:
     # version is generated using setuptoold scm on sync. This might not exist.
-    from ._version import __version__
+    from visions._version import __version__
 except ImportError:
     __version__ = "-"
 
 
-class Settings(BaseSettings):
+class RenderSettings(BaseModel):
+    """
+    https://render.com/docs/environment-variables
+    """
+
+    render: bool = False
+    is_pull_request: bool = False
+    render_service_id: str | None = None
+    render_service_name: str | None = None
+    render_service_type: str | None = None
+    render_external_hostname: str | None = None
+    render_external_url: str | None = None
+    render_git_branch: str | None = None
+    render_git_commit: str | None = None
+    render_git_repo_slug: str | None = None
+    render_instance_id: str | None = None
+
+    def is_local(self) -> bool:
+        return not self.render
+
+
+class Settings(RenderSettings, BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
     # Application
     app_name: str = "Visions API"
     debug: bool = False
     version: str = __version__
-    cors_origins: list[str] = ["http://localhost:8088"]
     api_base_url: str = "http://localhost:8000"
+    cors_origins: list[str] = ["http://localhost:8088"]
+
+    cors_origins_regex: str = r"^https://visions-(api|web)(-pr-[0-9]+)?\.onrender\.com[/]?.*$"
+    """Regex to allow CORS origins from render previews on PRs - https://regex101.com/"""
 
     # Database (NeonDB PostgreSQL connection string)
     database_host: str = "ep-noisy-lake-a4y55m57-pooler.us-east-1.aws.neon.tech"
@@ -31,9 +55,6 @@ class Settings(BaseSettings):
         return SecretStr(
             f"postgresql+psycopg://{self.database_user}:{self.database_password.get_secret_value()}@{self.database_host}:{self.database_port}/{self.database_name}?sslmode=require"
         )
-
-    # Frontend
-    frontend_url: str = "http://localhost:8088"
 
     # Supabase
     supabase_project_id: str = "sutnrwodqzpfvuuboksu"
@@ -54,6 +75,10 @@ class Settings(BaseSettings):
     @property
     def s3_endpoint_url(self) -> str:
         return f"https://{self.supabase_project_id}.storage.supabase.co/storage/v1/s3"
+
+    # Frontend
+    # def frontend_url(self) -> str:
+    #     return "http://localhost:8088" if self.is_local else self.render_external_url
 
     # Gemini via pydantic-ai
     # https://aistudio.google.com/api-keys

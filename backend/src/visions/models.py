@@ -145,6 +145,7 @@ class User(UserBase, CreatedUpdatedAtMixin, table=True):
 
     properties: list[Property] = Relationship(back_populates="owner")
     generation_jobs: list[GenerationJob] = Relationship(back_populates="submitter")
+    shared_properties: list[PropertyShare] = Relationship(back_populates="shared_with")
 
     def to_response(self) -> UserResponse:
         return UserResponse(
@@ -173,26 +174,26 @@ class UserResponse(BaseModel):
 
 
 class PropertyBase(SQLModel):
-    name: str = Field(max_length=255)
     description: str | None = Field(default=None)
     address: str | None = Field(default=None, max_length=500)
+
+
+class PropertyUpdate(PropertyBase):
+    name: str | None = Field(default=None, max_length=255)
+    public: bool | None = None
 
 
 class PropertyCreate(PropertyBase):
-    pass
+    name: str = Field(max_length=255)
+    public: bool = False
 
 
-class PropertyUpdate(SQLModel):
-    name: str | None = Field(default=None, max_length=255)
-    description: str | None = Field(default=None)
-    address: str | None = Field(default=None, max_length=500)
-
-
-class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+class Property(PropertyCreate, UUIDModel, CreatedUpdatedAtMixin, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", index=True)
 
     owner: User = Relationship(back_populates="properties")
     rooms: list[Room] = Relationship(back_populates="property")
+    shares: list[PropertyShare] = Relationship(back_populates="property")
 
     async def to_response(self) -> PropertyResponse:
         return PropertyResponse(
@@ -200,6 +201,7 @@ class Property(PropertyBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
             name=self.name,
             description=self.description,
             address=self.address,
+            public=self.public,
             owner_id=self.owner_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
@@ -214,10 +216,46 @@ class PropertyResponse(BaseModel):
     name: str
     description: str | None
     address: str | None
+    public: bool
     owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None
     rooms: list[RoomResponse]
+
+
+# ─── PropertyShare ────────────────────────────────────────────────────────────
+# Allow users to share properties with others
+
+
+class PropertyShareBase(BaseModel):
+    """Schema used to share a property with another user"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    property_id: uuid.UUID
+    shared_with_id: uuid.UUID
+
+
+class PropertyShareCreate(PropertyShareBase):
+    """Data needed to create a property share"""
+
+    pass
+
+
+class PropertyShareUpdate(PropertyShareBase):
+    """Data needed to update a property share"""
+
+    pass
+
+
+class PropertyShare(PropertyShareBase, UUIDModel, CreatedUpdatedAtMixin, table=True):
+    __table_args__ = (UniqueConstraint("property_id", "shared_with_id"),)
+
+    property_id: uuid.UUID = Field(foreign_key="property.id", index=True)
+    shared_with_id: uuid.UUID = Field(foreign_key="user.id", index=True)
+
+    property: Property = Relationship(back_populates="shares")
+    shared_with: User = Relationship(back_populates="shared_properties")
 
 
 # ─── Room ─────────────────────────────────────────────────────────────────────

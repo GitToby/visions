@@ -269,11 +269,11 @@ Make use of services in your business logic, services live in `services/`.
 ```bash
 # 1. Update models.py
 # 2. Generate migration
-mise run backend:mk-migration 'add room.label column'
+just backend:mk-migration 'add room.label column'
 
 # 3. Review the generated file in alembic/versions/ — never auto-apply without review
 # 4. Apply
-mise run backend:migrate
+just backend:migrate
 ```
 
 **Never modify applied migrations** in `alembic/versions/`. If a migration is wrong, create a new one to correct it.

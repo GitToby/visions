@@ -9,6 +9,9 @@ services:
     runtime: python
     region: frankfurt
     plan: free
+    previews:
+      generation: manual # add [render preview] to MRs
+
     domains:
       - api.visions.tobydevlin.com
 
@@ -43,6 +46,9 @@ services:
     name: visions-web
     rootDir: frontend
     runtime: static
+    previews:
+      generation: automatic
+
     domains:
       - visions.tobydevlin.com
 
