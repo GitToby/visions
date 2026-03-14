@@ -149,16 +149,15 @@ async def _submit_job(db: AsyncSession, job: GenerationJob, dry_run: bool = Fals
     job_id = job.id
     try:
         if job.original_job_id:
-            original_job = await get(db, job.original_job_id, caller_id=None)
-            if original_job is None:
+            if job.original_job is None:
                 raise ValueError(f"Original job {job.original_job_id} not found, links broken.")
 
             logger.debug(
                 "Original job found | job_id={} room_id={}",
                 job.original_job_id,
-                original_job.room_id,
+                job.original_job.id,
             )
-            img_url = await original_job.get_image_url()
+            img_url = await job.original_job.get_image_url()
         else:
             img_url = await job.room.get_image_url()
 
