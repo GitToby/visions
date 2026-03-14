@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
-from typing import BinaryIO, override
+from typing import BinaryIO, Optional, override
 
 from fastapi import UploadFile
 from fastapi.datastructures import Headers
@@ -390,18 +390,17 @@ class GenerationJob(UUIDModel, CreatedUpdatedAtMixin, FileStoreMixin, table=True
 
     room: Room = Relationship(back_populates="generation_jobs")
     submitter: User = Relationship(back_populates="generation_jobs")
-    # original_job: GenerationJob | None = Relationship(
-    #     back_populates="derived_jobs",
-    #     sa_relationship_kwargs={
-    #         # Use strings that match the class name and attribute
-    #         "foreign_keys": "GenerationJob.original_job_id",
-    #         "remote_side": "GenerationJob.id",
-    #     },
-    # )
-    # derived_jobs: list[GenerationJob] = Relationship(
-    #     back_populates="original_job",
-    #     sa_relationship_kwargs={"foreign_keys": "GenerationJob.original_job_id"},
-    # )
+    original_job: Optional[GenerationJob] = Relationship(  # noqa: UP045, sqlalchemy dosent like | syntax
+        back_populates="derived_jobs",
+        sa_relationship_kwargs={
+            "foreign_keys": "GenerationJob.original_job_id",
+            "remote_side": "GenerationJob.id",
+        },
+    )
+    derived_jobs: list[GenerationJob] = Relationship(
+        back_populates="original_job",
+        sa_relationship_kwargs={"foreign_keys": "GenerationJob.original_job_id"},
+    )
 
     async def to_response(self) -> GenerationJobResponse:
         return GenerationJobResponse(
