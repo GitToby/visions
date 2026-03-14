@@ -12,9 +12,9 @@ async function resolveApiBaseUrl(): Promise<string> {
     return "http://localhost:8000";
 
   // RENDER_EXTERNAL_URL = "https://visions-web-pr-42.onrender.com" on PR previews
-  // externalUrl will be in the form "https://visions-web-pr-<pr-number>.onrender.com", if it exists
   const externalUrl = process.env.RENDER_EXTERNAL_URL ?? "";
   if (externalUrl.includes("visions-web-pr-")) {
+    // externalUrl will be in the form "https://visions-api-pr-<pr-number>.onrender.com", if it exists
     const prApiUrl = externalUrl.replace("visions-web-pr-", "visions-api-pr-");
     try {
       const r = await fetch(`${prApiUrl}/health`);
