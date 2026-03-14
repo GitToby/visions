@@ -28,8 +28,18 @@ async function resolveApiBaseUrl(): Promise<string> {
 export default defineConfig(async () => {
   const apiBaseUrl = await resolveApiBaseUrl();
   console.log(`[vite] API base URL: ${apiBaseUrl}`);
+  const isLocal = !process.env.RENDER && !process.env.USE_PROD_SERVICES;
+  console.log(`[vite] isLocal: ${isLocal}`);
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: "local-favicon", // make the favicon different for local
+        transformIndexHtml: (html: string) =>
+          isLocal ? html.replace("/favicon.svg", "/favicon_local.svg") : html,
+      },
+    ],
     define: {
       "import.meta.env.IS_PULL_REQUEST": JSON.stringify(
         process.env.IS_PULL_REQUEST ?? "false",
