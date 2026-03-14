@@ -175,9 +175,9 @@ async def test_derived_generation_job(
 
 
 @pytest.fixture
-async def client(test_user: User, mock_db: AsyncMock):
+async def test_client(test_user: User, mock_db_session: AsyncMock):
     async def _override_get_session():
-        yield mock_db
+        yield mock_db_session
 
     app.dependency_overrides[get_session] = _override_get_session
     app.dependency_overrides[get_current_user] = lambda: test_user

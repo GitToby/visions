@@ -40,7 +40,7 @@ class Settings(RenderSettings, BaseSettings):
     api_base_url: str = "http://localhost:8000"
     cors_origins: list[str] = ["http://localhost:8088"]
 
-    cors_origins_regex: str = r"^https://visions-(api|web)(-pr-[0-9]+)?\.onrender\.com/.*$"
+    cors_origins_regex: str = r"^https://visions-(api|web)(-pr-[0-9]+)?\.onrender\.com[/]?.*$"
     """Regex to allow CORS origins from render previews on PRs - https://regex101.com/"""
 
     # Database (NeonDB PostgreSQL connection string)
