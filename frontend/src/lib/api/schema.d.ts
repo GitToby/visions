@@ -337,6 +337,8 @@ export interface components {
             description: string | null;
             /** Address */
             address: string | null;
+            /** Public */
+            public: boolean;
             /**
              * Owner Id
              * Format: uuid

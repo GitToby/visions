@@ -201,6 +201,7 @@ class Property(PropertyCreate, UUIDModel, CreatedUpdatedAtMixin, table=True):
             name=self.name,
             description=self.description,
             address=self.address,
+            public=self.public,
             owner_id=self.owner_id,
             created_at=self.created_at,
             updated_at=self.updated_at,
@@ -215,6 +216,7 @@ class PropertyResponse(BaseModel):
     name: str
     description: str | None
     address: str | None
+    public: bool
     owner_id: uuid.UUID
     created_at: datetime
     updated_at: datetime | None

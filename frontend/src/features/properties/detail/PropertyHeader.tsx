@@ -185,6 +185,23 @@ export function PropertyHeader({ property, propertyId }: PropertyHeaderProps) {
         </div>
       )}
 
+      {/* Public toggle */}
+      <label className="flex items-center gap-2 mt-2 cursor-pointer w-fit">
+        <input
+          type="checkbox"
+          className="toggle toggle-sm toggle-primary"
+          checked={property.public}
+          onChange={(e) => {
+            void patch({ public: e.target.checked }).then(
+              () => void invalidate()
+            );
+          }}
+        />
+        <span className="text-sm text-base-content/60">
+          {property.public ? "Public" : "Private"}
+        </span>
+      </label>
+
       {/* Address */}
       {editingAddress ? (
         <div className="flex items-center gap-2 mt-1">
