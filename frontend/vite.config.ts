@@ -6,6 +6,9 @@ import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    "import.meta.env.IS_PULL_REQUEST": JSON.stringify(process.env.IS_PULL_REQUEST),
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
