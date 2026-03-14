@@ -15,8 +15,6 @@ from visions.core.exception import VisionsApiException
 app = FastAPI(title=SETTINGS.app_name, version=SETTINGS.version, debug=SETTINGS.debug)
 
 
-app = FastAPI()
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=SETTINGS.cors_origins,

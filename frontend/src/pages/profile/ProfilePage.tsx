@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/features/auth/AuthContext";
+import config from "@/lib/config";
 
 export function ProfilePage() {
   const { user } = useAuth();
@@ -40,6 +41,33 @@ export function ProfilePage() {
             </div>
 
             <div className="divider" />
+
+            {user.email.endsWith("@tobydevlin.com") && (
+              <>
+                <div>
+                  <p className="text-sm font-medium mb-2">API Docs</p>
+                  <div className="flex gap-3">
+                    <a
+                      href={`${config.api.baseUrl}/docs`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link link-primary text-sm"
+                    >
+                      Swagger UI
+                    </a>
+                    <a
+                      href={`${config.api.baseUrl}/redoc`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link link-primary text-sm"
+                    >
+                      ReDoc
+                    </a>
+                  </div>
+                </div>
+                <div className="divider" />
+              </>
+            )}
 
             <div className="flex items-center justify-between">
               <div>

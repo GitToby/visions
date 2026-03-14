@@ -9,7 +9,7 @@ const authConfig = {
 
 const apiConfig = {
   baseUrl: import.meta.env.API_BASE_URL as string,
-  is_preview: !!import.meta.env.IS_PULL_REQUEST as boolean,
+  is_preview: import.meta.env.IS_PULL_REQUEST as boolean,
 };
 
 const config = {
