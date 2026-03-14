@@ -8,7 +8,7 @@ async function resolveApiBaseUrl(): Promise<string> {
   // Render env vars are set: https://render.com/docs/environment-variables
   const prod = "https://api.visions.tobydevlin.com";
 
-  if (!process.env.RENDER && !process.env.USE_PROD_API)
+  if (!process.env.RENDER && !process.env.USE_PROD_SERVICES)
     return "http://localhost:8000";
 
   // RENDER_EXTERNAL_URL = "https://visions-web-pr-42.onrender.com" on PR previews
