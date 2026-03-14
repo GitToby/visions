@@ -17,7 +17,14 @@ class Settings(BaseSettings):
     debug: bool = False
     version: str = __version__
     cors_origins: list[str] = ["http://localhost:8088"]
+    cors_origins_regex: str = r"^https://visions-api[^\./]*\.onrender\.com/$"
     api_base_url: str = "http://localhost:8000"
+
+    is_pull_request: bool = False
+    """
+    set in PRs on render.
+    https://render.com/docs/service-previews#working-with-pr-previews
+    """
 
     # Database (NeonDB PostgreSQL connection string)
     database_host: str = "ep-noisy-lake-a4y55m57-pooler.us-east-1.aws.neon.tech"
