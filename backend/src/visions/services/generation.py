@@ -9,11 +9,13 @@ from io import BytesIO
 from fastapi import HTTPException, status
 from loguru import logger
 from pydantic_ai.messages import ImageUrl
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from visions.core.config import SETTINGS
 from visions.core.db import async_session_factory
+from visions.core.exception import VisionsApiException
 from visions.models import (
     BUILTIN_STYLES_KV,
     GenerationJob,
@@ -22,6 +24,7 @@ from visions.models import (
     User,
 )
 from visions.services import ai
+from visions.services import room as room_service
 
 
 async def get_many(
@@ -30,6 +33,7 @@ async def get_many(
     caller_id: uuid.UUID | None,
     property_id: uuid.UUID | None = None,
     job_ids: list[uuid.UUID] | None = None,
+    load_generation_jobs: bool = False,
 ) -> Sequence[GenerationJob]:
     """List generation jobs for a property or all jobs for a user."""
     logger.debug("Listing generation jobs | property_id={} caller_id={}", property_id, caller_id)
@@ -41,7 +45,10 @@ async def get_many(
         q = q.join(Room).where(Room.property_id == property_id)
 
     if job_ids:
-        q = q.where(GenerationJob.id.in_(job_ids))  # pyright: ignore[reportAttributeAccessIssue] # pyrefly: ignore[reportAttributeAccessIssue,missing-attribute]
+        q = q.where(GenerationJob.id.in_(job_ids))  # type: ignore[reportAttributeAccessIssue, reportAttributeAccessIssue,missing-attribute]
+
+    if load_generation_jobs:
+        q = q.options(selectinload(GenerationJob.generation_jobs))  # type: ignore[reportAttributeAccessIssue]
 
     result = await db.exec(q)
     return result.all()
@@ -72,6 +79,22 @@ async def get_or_404(db: AsyncSession, job_id: uuid.UUID, caller_id: uuid.UUID) 
 async def create_many(
     db: AsyncSession, *, data: list[GenerationJobCreate], caller: User
 ) -> list[GenerationJob]:
+    rooms_with_access = await room_service.get_many(
+        db, room_ids=[job.room_id for job in data], caller_id=caller.id
+    )
+    accessible_room_ids = {room.id for room in rooms_with_access}
+
+    # if a user has not got access to a room, they will not be able to submit a job for it
+    # question: should we build failed job ids here:
+    if any(job.room_id not in accessible_room_ids for job in data):
+        rooms_without_access = {
+            job.room_id for job in data if job.room_id not in accessible_room_ids
+        }
+        raise VisionsApiException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User does not have access to rooms: {', '.join(str(r) for r in rooms_without_access)}",
+        )
+
     jobs = [
         GenerationJob(
             room_id=job.room_id,
@@ -81,7 +104,9 @@ async def create_many(
             extra_context=job.extra_context,
         )
         for job in data
+        if job.room_id in accessible_room_ids
     ]
+
     db.add_all(jobs)
     db.add(caller)
     caller.balance -= SETTINGS.generation_cost * len(jobs)
@@ -93,27 +118,23 @@ async def create_many(
     return jobs
 
 
-async def submit_jobs(job_ids: list[uuid.UUID]):
+async def submit_jobs(job_ids: list[uuid.UUID], dry_run: bool = False):
     """Run a series of generation jobs in their own DB session. Safe to call from a background task."""
     async with async_session_factory() as db:
-        jobs = await get_many(db, caller_id=None, job_ids=job_ids)
+        jobs = await get_many(db, caller_id=None, job_ids=job_ids, load_generation_jobs=True)
         missing_jobs = set(job_ids) - {j.id for j in jobs}
         if missing_jobs:
             logger.warning("Job not found | job_ids={}", missing_jobs)
 
-        jobs = await asyncio.gather(*[_submit_job(db, job) for job in jobs])
+        jobs = await asyncio.gather(*[_submit_job(db, job, dry_run) for job in jobs])
         await db.commit()
         return jobs
 
 
-async def _submit_job(db: AsyncSession, job: GenerationJob):
+async def _submit_job(db: AsyncSession, job: GenerationJob, dry_run: bool = False):
     logger.debug("Submitting job | job_id={} room_id={} style={}", job.id, job.room_id, job.style)
     job_id = job.id
     try:
-        room = await db.get(Room, job.room_id)
-        if room is None:
-            raise ValueError(f"Room {job.room_id} not found")
-
         if job.original_job_id:
             original_job = await get(db, job.original_job_id, caller_id=None)
             if original_job is None:
@@ -126,7 +147,7 @@ async def _submit_job(db: AsyncSession, job: GenerationJob):
             )
             img_url = await original_job.get_image_url()
         else:
-            img_url = await room.get_image_url()
+            img_url = await job.room.get_image_url()
 
         if not img_url:
             raise ValueError(f"Room {job.room_id} has no image URL")
@@ -143,6 +164,10 @@ async def _submit_job(db: AsyncSession, job: GenerationJob):
             job.style,
             img_url,
         )
+        if dry_run:
+            logger.debug("Dry run | job_id={} data={}", job_id, job.model_dump_json())
+            return job
+
         prompt = ai.system_prompt(style.name, style.description, extra_context=job.extra_context)
 
         # https://ai.pydantic.dev/input/
@@ -173,20 +198,20 @@ async def _submit_job(db: AsyncSession, job: GenerationJob):
     return job
 
 
-async def main_genjob_rec():
+async def main_genjob_rec(dry_run: bool = True):
     q = (
         select(GenerationJob)
         .where(
-            GenerationJob.completed_at == None,  # noqa E711
-            GenerationJob.error_message == None,  # noqa E711
+            GenerationJob.completed_at.is_(None),  # type: ignore[reportAttributeAccessIssue]
+            GenerationJob.error_message.is_(None),  # type: ignore[reportAttributeAccessIssue]
         )
-        .order_by(GenerationJob.created_at)  # pyright: ignore[reportArgumentType] # pyrefly: ignore[bad-argument-type]
+        .order_by(GenerationJob.created_at)  # type: ignore[reportArgumentType, bad-argument-type]
     )
     async with async_session_factory() as session:
         result = await session.exec(q)
         job_ids = [job.id for job in result.all()]
 
-    await submit_jobs(job_ids)
+    await submit_jobs(job_ids, dry_run=dry_run)
     logger.info("Generation job rec complete | job_ids={}", job_ids)
 
 

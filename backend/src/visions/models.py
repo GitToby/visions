@@ -9,7 +9,7 @@ from typing import BinaryIO, override
 from fastapi import UploadFile
 from fastapi.datastructures import Headers
 from PIL import Image
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 from sqlalchemy import TIMESTAMP, UniqueConstraint, text
 from sqlalchemy.event import listens_for
 from sqlmodel import Field, Relationship, SQLModel
@@ -427,6 +427,11 @@ class GenerationJobResponse(BaseModel):
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime | None
+
+    @computed_field
+    @property
+    def failed(self) -> bool:
+        return self.error_message is not None
 
 
 # ─── Design style ─────────────────────────────────────────────────────────────

@@ -8,6 +8,13 @@ repos:
         types: [python]
         pass_filenames: false
 
+      - id: backend-test
+        name: backend typecheck
+        entry: just backend::test
+        language: system
+        types: [python]
+        pass_filenames: false
+
       - id: frontend-lint
         name: frontend lint
         entry: just frontend::check

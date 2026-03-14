@@ -295,6 +295,8 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
+            /** Failed */
+            readonly failed: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
