@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BeforeAfterDiff } from "@/components/BeforeAfterDiff";
 import { useAuth } from "@/features/auth/AuthContext";
 import { LoginModal } from "@/features/auth/LoginModal";
+import config from "@/lib/config";
 
 const ROOMS = [
   {
@@ -50,7 +51,7 @@ export function LandingPage() {
           {/* Text */}
           <div>
             <h1 className="text-5xl font-bold tracking-tight mb-5 leading-tight">
-              Reimagine your rooms
+              Reimagine your rooms | {config.api.is_preview}
             </h1>
             <p className="text-xl text-base-content/60 mb-8">
               Upload a photo of any room, pick a design style, and get an
