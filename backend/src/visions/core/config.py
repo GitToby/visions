@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 try:
     # version is generated using setuptoold scm on sync. This might not exist.
-    from ._version import __version__
+    from visions._version import __version__
 except ImportError:
     __version__ = "-"
 
