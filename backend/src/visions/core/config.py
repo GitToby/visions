@@ -16,9 +16,11 @@ class Settings(BaseSettings):
     app_name: str = "Visions API"
     debug: bool = False
     version: str = __version__
-    cors_origins: list[str] = ["http://localhost:8088"]
-    cors_origins_regex: str = r"^https://visions-api[^\./]*\.onrender\.com/$"
     api_base_url: str = "http://localhost:8000"
+    cors_origins: list[str] = ["http://localhost:8088"]
+
+    cors_origins_regex: str = r"^https://visions-(api|web)[^\./]*\.onrender\.com/$"
+    """Regex to allow CORS origins from render previews on PRs"""
 
     is_pull_request: bool = False
     """

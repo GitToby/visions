@@ -8,6 +8,7 @@ const authConfig = {
 
 const apiConfig = {
   baseUrl: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
+  is_preview: import.meta.env.IS_PULL_REQUEST ?? "na",
 };
 
 const config = {
