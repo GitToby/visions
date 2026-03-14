@@ -32,6 +32,17 @@ export function useMe(enabled = true) {
   });
 }
 
+export function useFeaturedProperties() {
+  return useQuery({
+    queryKey: queryKeys.featuredProperties,
+    queryFn: async () => {
+      const { data, error } = await apiClient.GET("/properties/featured");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useProperties() {
   return useQuery({
     queryKey: queryKeys.properties,
