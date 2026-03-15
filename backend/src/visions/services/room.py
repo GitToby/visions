@@ -11,16 +11,19 @@ from visions.models import Property, Room, RoomCreate, RoomUpdate
 
 
 async def list_all(
-    db: AsyncSession, *, property_id: uuid.UUID, caller_id: uuid.UUID
+    db: AsyncSession,
+    *,
+    property_ids: list[uuid.UUID],
+    caller_id: uuid.UUID | None = None,
 ) -> Sequence[Room]:
-    """List all rooms for a property, ensuring the caller has access."""
-    logger.debug("Listing rooms | property_id={} caller_id={}", property_id, caller_id)
-    q = (
-        select(Room)
-        .join(Property)
-        .where(Room.property_id == property_id, Property.owner_id == caller_id)
-        .options(selectinload(Room.generation_jobs))  # type: ignore[arg-type]
-    )
+    """List all rooms for a property, Optionally filtering by caller access."""
+    logger.debug("Listing rooms | property_ids={} caller_id={}", property_ids, caller_id)
+    q = select(Room).join(Property).where(Room.property_id.in_(property_ids))  # type: ignore[reportAttributeAccessIssue]
+
+    if caller_id is not None:
+        q = q.where(Property.owner_id == caller_id)
+
+    q = q.options(selectinload(Room.generation_jobs))  # type: ignore[arg-type]
     result = await db.exec(q)
     return result.all()
 

@@ -9,7 +9,6 @@ from loguru import logger
 from supabase import StorageException, create_async_client
 
 from visions.core.config import SETTINGS
-from visions.core.exception import VisionsApiException
 
 SIGNED_URL_EXPIRES = 3600  # 1 hour
 
@@ -72,16 +71,12 @@ async def s3_presigned_url(*, bucket: str, key: str) -> str | None:
             logger.debug("Presigned URL: object not found | key={}", key)
             return None
         logger.error("Presigned URL generation failed | key={} error={}", key, exc)
-        raise VisionsApiException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Could not generate image URL",
-        ) from exc
+        return None
 
 
 def upload_file(file: UploadFile, *, bucket: str, key: str):
     """Uploads a file to S3."""
     size_kb = (file.size or 0) / 1024
-    # todo, check if image by known codecs - then alter the image to be of a standard size
     logger.debug(f"Uploading generated image | {bucket}/{key} {size_kb=:.1f}KB")
     try:
         _s3.upload_fileobj(

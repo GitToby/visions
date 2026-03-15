@@ -10,8 +10,19 @@ from pydantic_ai import ImageUrl
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from visions.core.config import SETTINGS
-from visions.models import BUILTIN_STYLES_KV, GenerationJob, GenerationJobCreate, Room, User
+from visions.core.exception import VisionsApiException
+from visions.models import (
+    BUILTIN_STYLES_KV,
+    GenerationJob,
+    GenerationJobCreate,
+    PropertyCreate,
+    Room,
+    RoomCreate,
+    User,
+)
 from visions.services import generation as generation_service
+from visions.services import property as property_service
+from visions.services import room as room_service
 
 
 @pytest.mark.asyncio
@@ -23,17 +34,18 @@ async def test_get_many_returns_empty_when_no_jobs(mock_db_session: AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_get_many_returns_after_create_many(mock_db_session: AsyncSession, test_user: User):
-    room_id = uuid.uuid4()
+async def test_get_many_returns_after_create_many(
+    mock_db_session: AsyncSession, test_user: User, test_room: Room
+):
     jobs = [
-        GenerationJobCreate(room_id=room_id, style="Japandi"),
-        GenerationJobCreate(room_id=room_id, style="Maximalist"),
+        GenerationJobCreate(room_id=test_room.id, style="Japandi"),
+        GenerationJobCreate(room_id=test_room.id, style="Maximalist"),
     ]
     jobs = await generation_service.create_many(mock_db_session, caller=test_user, data=jobs)
     assert len(jobs) == 2
-    assert jobs[0].room_id == room_id
+    assert jobs[0].room_id == test_room.id
     assert jobs[0].style == "Japandi"
-    assert jobs[1].room_id == room_id
+    assert jobs[1].room_id == test_room.id
     assert jobs[1].style == "Maximalist"
 
 
@@ -122,31 +134,35 @@ async def test_get_many_unauthorized_access(
 ):
     """Ensure a user cannot see jobs submitted by a different user."""
 
-    # 1. Create a "Stranger" user
-    stranger = User(
-        id=uuid.uuid4(),
-        email="stranger@example.com",
-        name="Stranger",
-    )
+    # 1. Create a "Stranger" user with their own property and room
+    stranger = User(id=uuid.uuid4(), email="stranger@example.com", name="Stranger")
     mock_db_session.add(stranger)
+    await mock_db_session.commit()
 
-    # 2. Create a job belonging to the Stranger
-    # We use create_many but pass the stranger as the caller
-    stranger_job_data = [GenerationJobCreate(room_id=test_room.id, style="minimalist")]
+    stranger_property = await property_service.create(
+        mock_db_session,
+        owner_id=stranger.id,
+        data=PropertyCreate(name="stranger property", description=None, address=None),
+    )
+    stranger_room = await room_service.create(
+        mock_db_session,
+        caller_id=stranger.id,
+        data=RoomCreate(label="Stranger Room", property_id=stranger_property.id),
+    )
 
+    # 2. Create a job belonging to the Stranger using their own room
+    stranger_job_data = [GenerationJobCreate(room_id=stranger_room.id, style="japandi")]
     stranger_jobs = await generation_service.create_many(
         db=mock_db_session, data=stranger_job_data, caller=stranger
     )
     stranger_job_id = stranger_jobs[0].id
 
-    # 3. Attempt to fetch jobs using the 'test_user' (the primary fixture)
-    # We pass the ID of the stranger's job, but the identity of test_user
+    # 3. Attempt to fetch jobs using the 'test_user' — they should not see stranger's job
     results = await generation_service.get_many(
         mock_db_session, caller_id=test_user.id, job_ids=[stranger_job_id]
     )
 
     # 4. Assertions
-    # The result should be empty because test_user doesn't own that job
     assert len(results) == 0
     assert stranger_job_id not in [j.id for j in results]
 
@@ -158,7 +174,7 @@ async def test_get_or_404_raises_exception(mock_db_session: AsyncSession, test_u
     # 1. Create a random UUID that definitely doesn't exist in the DB
     non_existent_id = uuid.uuid4()
 
-    # 2.1 assert that we sould normally get None
+    # 2.1 assert that we should normally get None
     result = await generation_service.get(
         db=mock_db_session, job_id=non_existent_id, caller_id=test_user.id
     )
@@ -173,6 +189,98 @@ async def test_get_or_404_raises_exception(mock_db_session: AsyncSession, test_u
     # 3. Verify the error details
     assert exc_info.value.status_code == 404
     assert "not found" in exc_info.value.detail.lower()
+
+
+### Room Access Checks
+@pytest.mark.asyncio
+async def test_create_many_raises_if_caller_lacks_room_access(
+    mock_db_session: AsyncSession, test_user: User, test_room: Room
+):
+    """create_many must raise HTTP 400 if the caller doesn't own the room's property."""
+    # Create a second user who does not own test_room
+    stranger = User(id=uuid.uuid4(), email="stranger@example.com", name="Stranger")
+    mock_db_session.add(stranger)
+    await mock_db_session.commit()
+
+    job_data = [GenerationJobCreate(room_id=test_room.id, style="japandi")]
+
+    with pytest.raises(VisionsApiException) as exc_info:
+        await generation_service.create_many(mock_db_session, data=job_data, caller=stranger)
+
+    assert exc_info.value.status_code == 400
+    assert str(test_room.id) in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_create_many_raises_for_nonexistent_room(
+    mock_db_session: AsyncSession, test_user: User
+):
+    """create_many must raise HTTP 400 if the room does not exist at all."""
+    room_id = uuid.uuid4()
+    job_data = [GenerationJobCreate(room_id=room_id, style="japandi")]
+
+    with pytest.raises(VisionsApiException) as exc_info:
+        await generation_service.create_many(mock_db_session, data=job_data, caller=test_user)
+
+    assert exc_info.value.status_code == 400
+    assert str(room_id) in str(exc_info.value.detail)
+
+
+### dry_run
+@pytest.mark.asyncio
+async def test_submit_job_dry_run_skips_ai(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    mock_ai: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """With dry_run=True, _submit_job returns the job early without calling AI or uploading."""
+    style_key = next(iter(BUILTIN_STYLES_KV.keys()))
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        data=[GenerationJobCreate(room_id=test_room.id, style=style_key)],
+        caller=test_user,
+    )
+    job = jobs[0]
+
+    mock_upload = AsyncMock(name="mock_upload")
+    monkeypatch.setattr(GenerationJob, "upload_image", mock_upload)
+
+    mock_get_image_url = AsyncMock(return_value="https://example.com/room.webp")
+    monkeypatch.setattr(Room, "get_image_url", mock_get_image_url)
+
+    result = await generation_service._submit_job(mock_db_session, job, dry_run=True)
+
+    assert mock_ai.run.call_count == 0
+    assert mock_upload.call_count == 0
+    assert mock_get_image_url.call_count == 1
+    assert result.completed_at is None
+    assert result.error_message is None
+
+
+@pytest.mark.asyncio
+async def test_submit_job_dry_run_still_validates_style(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """dry_run=True does not bypass style validation — bad styles still set error_message."""
+    bad_style = "nonexistent_style_xyz"
+    jobs = await generation_service.create_many(
+        mock_db_session,
+        data=[GenerationJobCreate(room_id=test_room.id, style=bad_style)],
+        caller=test_user,
+    )
+    job = jobs[0]
+
+    monkeypatch.setattr(GenerationJob, "upload_image", AsyncMock())
+
+    result = await generation_service._submit_job(mock_db_session, job, dry_run=True)
+
+    assert result.error_message is not None
+    assert f"Unknown style: {bad_style!r}" in result.error_message
 
 
 ### Financials & Constraints
@@ -384,4 +492,27 @@ async def test_concurrent_job_submissions(mock_db_session: AsyncSession):
 @pytest.mark.asyncio
 async def test_upload_image_to_storage_integration(mock_db_session: AsyncSession):
     """Verify the interaction between the AI response data and the job's upload_image method."""
+    ...
+
+
+### ROOM_GENERATION_NOTIFICATIONS
+@pytest.mark.asyncio
+async def test_submit_jobs_notifies_subscribed_queue(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """submit_jobs puts the processed job into any queue registered for its room_id."""
+    ...
+
+
+@pytest.mark.asyncio
+async def test_submit_jobs_does_not_notify_unrelated_room(
+    mock_db_session: AsyncSession,
+    test_user: User,
+    test_room: Room,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A queue registered for a different room_id should not receive notifications."""
     ...

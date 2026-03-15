@@ -11,7 +11,11 @@ check: init lint
     uv run pyrefly check src
 
 test *flags: check
-    uv run pytest -v {{ flags }}
+    uv run pytest {{ flags }}
+
+
+test-cov *flags: check
+    uv run pytest --cov=src --cov-report=term-missing {{ flags }}
 
 mk-migration name: check
     uv run alembic revision --autogenerate -m "{{ name }}"

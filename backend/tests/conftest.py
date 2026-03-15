@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -24,6 +25,7 @@ os.environ.setdefault("GEMINI_API_KEY", "test")
 
 # visions.* must be imported after env vars are set
 
+from visions.core import db  # noqa E402
 from visions.core.config import SETTINGS  # noqa  E402
 from visions.core.db import get_session  # noqa  E402
 from visions.core.security import get_current_user  # noqa  E402
@@ -38,11 +40,11 @@ from visions.models import (  # noqa  E402
     User,
     get_metadata,
 )
+from visions.services import ai as ai_service  # noqa  E402
+from visions.services import generation as generation_service  # noqa  E402
 from visions.services import property as property_service  # noqa  E402
 from visions.services import room as room_service  # noqa  E402
-from visions.services import generation as generation_service  # noqa  E402
 from visions.services import storage as storage_service  # noqa  E402
-from visions.services import ai as ai_service  # noqa  E402
 
 RESOURCES_DIR = Path(__file__).parent / "resources"
 
@@ -63,6 +65,13 @@ def mock_supabase(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.fixture(autouse=True)
+def mock_s3(monkeypatch: pytest.MonkeyPatch):
+    mock = MagicMock(name="mock_s3")
+    monkeypatch.setattr(storage_service, "_s3", mock)
+    return mock
+
+
+@pytest.fixture(autouse=True)
 def mock_ai(monkeypatch: pytest.MonkeyPatch):
     mock_agent = MagicMock(name="mock_agent")
     mock_agent.run = AsyncMock()
@@ -70,8 +79,9 @@ def mock_ai(monkeypatch: pytest.MonkeyPatch):
     return mock_agent
 
 
-@pytest.fixture
-async def mock_db_session():
+@pytest.fixture(autouse=True)
+async def mock_session_factory(monkeypatch: pytest.MonkeyPatch):
+    """Patches generation_service.async_session_factory to use a given session."""
     # All sessions will have a fresh in-memory database
     engine = create_async_engine(
         "sqlite+aiosqlite://",  # :memory: connection
@@ -87,13 +97,17 @@ async def mock_db_session():
 
     # 2. Setup session factory
     async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    monkeypatch.setattr(db, "async_session_factory", async_session_factory)
 
     # 3. Use the session and ensure cleanup
-    async with async_session_factory() as session:
-        yield session
-
-    # 4. Explicitly dispose of the engine after the session is closed
+    yield async_session_factory
     await engine.dispose()
+
+
+@pytest.fixture
+async def mock_db_session(mock_session_factory: Callable[[], AsyncSession]):
+    async with mock_session_factory() as session:
+        yield session
 
 
 @pytest.fixture

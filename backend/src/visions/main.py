@@ -1,4 +1,5 @@
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -9,10 +10,25 @@ from loguru import logger
 from pydantic import BaseModel
 
 from visions.api import auth, generation, property, styles
-from visions.core.config import SETTINGS
+from visions.core.config import RESOURCES, SETTINGS
 from visions.core.exception import VisionsApiException
 
-app = FastAPI(title=SETTINGS.app_name, version=SETTINGS.version, debug=SETTINGS.debug)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    logger.info("Starting up")
+    yield
+    logger.info("Shutting down")
+
+
+_description = (RESOURCES / "api_description.md").read_text()
+app = FastAPI(
+    title=SETTINGS.app_name,
+    version=SETTINGS.version,
+    debug=SETTINGS.debug,
+    lifespan=lifespan,
+    description=_description,
+)
 
 
 app.add_middleware(

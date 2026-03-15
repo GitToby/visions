@@ -1,16 +1,16 @@
 repos:
   - repo: local
     hooks:
-      - id: backend-check
-        name: backend typecheck
-        entry: just backend::check
+      - id: backend-test
+        name: backend test
+        entry: just backend::test
         language: system
         types: [python]
         pass_filenames: false
 
-      - id: frontend-lint
-        name: frontend lint
-        entry: just frontend::check
+      - id: frontend-test
+        name: frontend test
+        entry: just frontend::test
         language: system
         files: ^frontend/src/
         pass_filenames: false
