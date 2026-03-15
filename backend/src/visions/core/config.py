@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from loguru import logger
 from pydantic import BaseModel, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -7,6 +9,8 @@ try:
     from visions._version import __version__
 except ImportError:
     __version__ = "-"
+
+RESOURCES = (Path(__file__).parent.parent / "resources").resolve()
 
 
 class RenderSettings(BaseModel):

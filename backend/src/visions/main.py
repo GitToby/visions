@@ -10,19 +10,24 @@ from loguru import logger
 from pydantic import BaseModel
 
 from visions.api import auth, generation, property, styles
-from visions.core.config import SETTINGS
+from visions.core.config import RESOURCES, SETTINGS
 from visions.core.exception import VisionsApiException
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     logger.info("Starting up")
     yield
     logger.info("Shutting down")
 
 
+_description = (RESOURCES / "api_description.md").read_text()
 app = FastAPI(
-    title=SETTINGS.app_name, version=SETTINGS.version, debug=SETTINGS.debug, lifespan=lifespan
+    title=SETTINGS.app_name,
+    version=SETTINGS.version,
+    debug=SETTINGS.debug,
+    lifespan=lifespan,
+    description=_description,
 )
 
 
