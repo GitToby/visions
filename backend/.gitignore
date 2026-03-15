@@ -1,4 +1,6 @@
+.pytest_cache
 _version.py
 notepad.md
 *coverage*
 *,cover
+*.log
